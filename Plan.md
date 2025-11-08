@@ -105,51 +105,64 @@
 
 ---
 
-## **PHASE 4: Spaced Repetition & Progress Tracking (Week 2-3)**
+## **PHASE 4: Spaced Repetition & Progress Tracking (Week 2-3)** ✓ COMPLETE
+
 **Goal:** Implement intelligent review scheduling based on successful practice days.
 
-**Database Changes:**
-- Add `successful_days` (int, default 0) - how many different days she's successfully practiced this word
-- Add `last_practiced` (date) - last day she practiced this word successfully
-- Add `next_review` (date) - when to show this word again
+**Database Changes Implemented:**
+- ✓ Added `successful_days` (int, default 0) - days successfully practiced this word
+- ✓ Added `last_practiced` (date) - last day of successful practice
+- ✓ Added `next_review` (date) - when to show word next
+- ✓ Initialize test words with `next_review = today`
 
-**Features:**
-- Track successful practices across multiple days (not session attempts)
-- Only increment `successful_days` once per day per word (even if practiced multiple times that day)
-- Wrong answers don't reset counter, just schedule sooner review
-- Mode switches at `successful_days = 2` (Learning Mode → Recall Mode permanently)
+**Features Implemented:**
+- ✓ Track successful practices across multiple days (not session attempts)
+- ✓ Increment `successful_days` only once per day per word (prevents gaming the system)
+- ✓ Wrong answers don't reset counter, just schedule sooner review
+- ✓ Mode permanently switches at `successful_days = 2` (Learning Mode → Recall Mode)
+- ✓ Only show words where `next_review <= today`
+- ✓ Never show same word twice in one session
 
-**Review Scheduling Logic:**
+**Review Scheduling Logic Implemented:**
 
-After **successful practice** (gets correct):
+After **successful practice**:
 - If first success today: increment `successful_days`, set `last_practiced = today`
-- Calculate `next_review`:
-  - `successful_days = 0` → `next_review = today + 1` (tomorrow)
-  - `successful_days = 1` → `next_review = today + 2` (in 2 days)
-  - `successful_days >= 2` → `next_review = today + 3` (in 3+ days, max 4)
+- Calculate `next_review` automatically:
+  - `successful_days = 0 → 1` → review in 2 days
+  - `successful_days = 1 → 2` → review in 3 days (enters Recall Mode)
+  - `successful_days >= 2` → review in 3 days (max, keeps word fresh)
 
-After **unsuccessful practice** (gets wrong):
+After **unsuccessful practice**:
 - Don't change `successful_days` or `last_practiced`
-- Set `next_review = today + 1` (retry sooner, but child keeps trying in this session until correct)
-
-**Word Selection:**
-- Show only words where `next_review <= today`
-- Never show same word twice in one session
-- Shuffle selection order
+- Child keeps trying in session until correct
+- Set `next_review = today + 1` for sooner retry
 
 **Example Flow:**
-- Day 1: "bee" wrong → keep trying in session
-- Day 1: "bee" correct → `successful_days = 1`, `next_review = Day 3`
-- Day 3: "bee" correct → `successful_days = 2` (Recall Mode now), `next_review = Day 6`
-- Day 6: "bee" (Recall Mode) correct → `next_review = Day 9`
+- Day 1: "bee" correct (1st success) → `successful_days = 1`, `next_review = Day 3`
+- Day 2: "bee" not shown (next_review = Day 3)
+- Day 3: "bee" correct (2nd success) → `successful_days = 2`, enters Recall Mode, `next_review = Day 6`
+- Day 6: "bee" in Recall Mode, correct → `next_review = Day 9`
+
+**Backend Endpoints:**
+- `GET /api/next-word` - Returns word + `successful_days` for mode determination
+- `GET /api/words-for-today` - Lists all words ready for practice (where `next_review <= today`)
+- `POST /api/practice` - Calls `update_word_on_success()` if correct
+
+**Frontend Logic:**
+- Mode determined entirely by `successful_days` from backend (not local attempts)
+- Learning Mode: `successful_days < 2` (letters visible, tap to spell)
+- Recall Mode: `successful_days >= 2` (type from memory, permanent)
+- Tracks `practicedWordsToday` set to prevent repeats in one session
+- Mode indicator shows progress ("0/2 days mastered" → "Mastered - typing practice")
 
 **Deliverables:**
-- Database updated with new tracking columns
-- Words automatically scheduled for review based on successful days
-- "Today's words" list shows words where `next_review <= today`
-- Mode switches permanently after 2 successful days
-- Progress persists across sessions and days
-- Child never practices same word twice in one session
+- ✓ Database updated with 3 new tracking columns
+- ✓ Words automatically scheduled for review based on successful days
+- ✓ API returns `successful_days` to frontend for mode determination
+- ✓ Mode switches permanently after 2 successful days
+- ✓ Progress persists across sessions and days
+- ✓ Child never practices same word twice in one session
+- ✓ Spaced repetition prevents forgetting while respecting attention span (2-4 day max gaps)
 
 ---
 

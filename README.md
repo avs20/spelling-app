@@ -2,11 +2,11 @@
 
 A tablet-friendly web app for children to practice spelling while drawing objects. The app uses spaced repetition to optimize learning.
 
-**Current Phase:** Phase 3 - Spelling Validation & Learning/Recall Modes (Complete) | Phase 4 - Spaced Repetition (In Progress)
+**Current Phase:** Phase 4 - Spaced Repetition & Progress Tracking (Complete)
 
 ---
 
-## Features (Phase 1-3) ✓ COMPLETE
+## Features (Phase 1-4) ✓ COMPLETE
 
 **Phase 1 - MVP:**
 - **Drawing Canvas** - Large, touch-optimized canvas for drawing with pen/stylus
@@ -38,10 +38,19 @@ A tablet-friendly web app for children to practice spelling while drawing object
 - **Learning Mode** - All letters visible for first 2 successful days
 - **Recall Mode** - Type word from memory after 2 successful days
 - **Animated Feedback** - Green for correct, red for incorrect with scaling animation
-- **Mode Indicator** - Shows current mode and attempt tracking
+- **Mode Indicator** - Shows current mode and progress tracking
 - **Keep-Trying Logic** - Child keeps attempting until correct within one session
-- **Session-Level Attempts** - Tracks attempts within a practice session
 - **Sound & Haptic Feedback** - Audio confirmation with vibration
+
+**Phase 4 - Spaced Repetition & Progress Tracking:**
+- **Multi-Day Tracking** - `successful_days` counts days practiced (not session attempts)
+- **Review Scheduling** - Words scheduled: +2 days after 1st success, +3 days after 2nd+ successes
+- **Smart Mode Switching** - Permanent (not session-based): Learning Mode (0-1 successful days) → Recall Mode (2+ successful days)
+- **Daily Limits** - `successful_days` increments max once per day (prevents practicing same word multiple times counting)
+- **Today's Queue** - Only words where `next_review <= today` are shown
+- **Session Deduplication** - Never show same word twice in one practice session
+- **Progress Persistence** - All tracking data persists across sessions and days
+- **API Endpoints** - `/api/next-word` returns `successful_days`, `/api/words-for-today` for dashboard
 
 ---
 
@@ -220,9 +229,7 @@ See [Plan.md](Plan.md) for detailed phase-by-phase development roadmap.
 - Phase 1 - MVP ✓
 - Phase 2 - Canvas Polish & UX ✓
 - Phase 3 - Spelling Validation & Learning/Recall Modes ✓
-
-**In Progress:**
-- Phase 4 - Spaced Repetition & Progress Tracking
+- Phase 4 - Spaced Repetition & Progress Tracking ✓
 
 **Planned:**
 - Phase 5 - Admin Mode (Word Management)
