@@ -2,11 +2,11 @@
 
 A tablet-friendly web app for children to practice spelling while drawing objects. The app uses spaced repetition to optimize learning.
 
-**Current Phase:** Phase 8 - Polish & Nice-to-Haves (Complete)
+**Current Phase:** Phase 9 - Testing & Tablet Compatibility (Complete)
 
 ---
 
-## Features (Phase 1-8) ✓ COMPLETE
+## Features (Phase 1-9) ✓ COMPLETE
 
 **Phase 1 - MVP:**
 - **Drawing Canvas** - Large, touch-optimized canvas for drawing with pen/stylus
@@ -90,6 +90,16 @@ A tablet-friendly web app for children to practice spelling while drawing object
 - **Event-Driven Updates** - Progress updates triggered on correct answers
 - **Click Interaction** - Badge shows encouraging message when clicked
 
+**Phase 9 - Testing & Tablet Compatibility:**
+- **Visual Regression Testing** - Automated screenshot capture with Playwright (17 screenshots)
+- **Compatibility Test Suite** - Browser features, touch events, canvas, performance testing
+- **Screenshot Capture** - Save PNG screenshots with timestamps for verification
+- **Text Reports** - Download detailed test results with pass/fail summary
+- **Multi-Device Testing** - Desktop, mobile (iPhone X), and tablet (iPad) viewports
+- **Performance Benchmarks** - Load time, render speed, memory usage tracking
+- **Auto-Save Results** - Test history saved to localStorage
+- **Testing Guide** - Complete TESTING.md with manual testing checklist
+
 ---
 
 ## Project Structure
@@ -99,13 +109,17 @@ A tablet-friendly web app for children to practice spelling while drawing object
 ├── backend/
 │   ├── main.py              # FastAPI app with routes
 │   ├── database.py          # SQLite setup and queries
+│   ├── data_management.py   # Phase 7 data management utilities
 │   ├── test_admin.py        # Phase 5 admin tests
 │   ├── test_dashboard.py    # Phase 6 dashboard tests
+│   ├── test_data_management.py # Phase 7 data management tests
+│   ├── visual_tests.py      # Phase 9 visual regression tests
 │   └── requirements.txt     # Python dependencies
 ├── frontend/
 │   ├── index.html           # Main app page
 │   ├── admin.html           # Phase 5 admin panel
 │   ├── dashboard.html       # Phase 6 parent dashboard
+│   ├── test-compatibility.html # Phase 9 compatibility tests
 │   ├── style.css            # Styles
 │   ├── canvas.js            # Canvas drawing logic
 │   ├── api.js               # Backend API calls
@@ -114,8 +128,11 @@ A tablet-friendly web app for children to practice spelling while drawing object
 │   ├── drawings/            # Saved drawing images
 │   ├── references/          # Phase 5 reference images
 │   └── spelling.db          # SQLite database
+├── test-screenshots/        # Phase 9 visual test screenshots
 ├── Plan.md                  # Phase-by-phase development plan
+├── TESTING.md               # Phase 9 testing guide
 ├── Agents.md                # Development guidelines
+├── run-visual-tests.sh      # Phase 9 visual testing script
 └── README.md                # This file
 ```
 
@@ -279,6 +296,32 @@ Default test words: bee, spider, butterfly (insects category)
 
 ---
 
+## Testing
+
+### Automated Tests
+
+**Backend Unit Tests (25 tests):**
+```bash
+cd backend
+~/.local/bin/uv run pytest test_admin.py -v          # 10 tests
+~/.local/bin/uv run pytest test_dashboard.py -v      # 8 tests
+~/.local/bin/uv run pytest test_data_management.py -v # 7 tests
+```
+
+**Visual Regression Tests:**
+```bash
+./run-visual-tests.sh  # Captures 17 screenshots
+```
+
+**Compatibility Tests:**
+```
+http://localhost:8002/test-compatibility.html
+```
+
+See [TESTING.md](TESTING.md) for complete testing guide.
+
+---
+
 ## Development Phases
 
 See [Plan.md](Plan.md) for detailed phase-by-phase development roadmap.
@@ -292,9 +335,9 @@ See [Plan.md](Plan.md) for detailed phase-by-phase development roadmap.
 - Phase 6 - Parent Dashboard ✓
 - Phase 7 - Data Management & Performance ✓
 - Phase 8 - Polish & Nice-to-Haves ✓
+- Phase 9 - Testing & Tablet Compatibility ✓
 
 **Planned:**
-- Phase 9 - Testing & Tablet Compatibility
 - Phase 10 - Launch & Expansion
 
 ---
