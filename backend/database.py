@@ -303,3 +303,120 @@ def get_all_words_admin():
     words = cursor.fetchall()
     conn.close()
     return [dict(word) for word in words]
+
+def get_practice_stats():
+    """
+    Phase 6: Get overall practice statistics for dashboard
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT 
+            COUNT(DISTINCT CASE WHEN DATE(practiced_date) = DATE('now') THEN word_id END) as words_today,
+            COUNT(DISTINCT CASE WHEN DATE(practiced_date) >= DATE('now', '-7 days') THEN word_id END) as words_this_week,
+            ROUND(AVG(CASE WHEN is_correct = 1 THEN 100.0 ELSE 0.0 END), 1) as overall_accuracy,
+            COUNT(*) as total_practices
+        FROM practices
+    """)
+    
+    stats = cursor.fetchone()
+    conn.close()
+    
+    if stats:
+        return {
+            'words_today': stats[0] or 0,
+            'words_this_week': stats[1] or 0,
+            'overall_accuracy': stats[2] or 0.0,
+            'total_practices': stats[3] or 0
+        }
+    return {'words_today': 0, 'words_this_week': 0, 'overall_accuracy': 0.0, 'total_practices': 0}
+
+def get_word_accuracy():
+    """
+    Phase 6: Get accuracy per word, sorted by worst performing
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT 
+            w.word,
+            w.category,
+            COUNT(*) as total_attempts,
+            SUM(CASE WHEN p.is_correct = 1 THEN 1 ELSE 0 END) as correct_attempts,
+            ROUND(100.0 * SUM(CASE WHEN p.is_correct = 1 THEN 1 ELSE 0 END) / COUNT(*), 1) as accuracy
+        FROM words w
+        JOIN practices p ON w.id = p.word_id
+        GROUP BY w.id, w.word, w.category
+        ORDER BY accuracy ASC, total_attempts DESC
+    """)
+    
+    words = cursor.fetchall()
+    conn.close()
+    
+    return [{
+        'word': w[0],
+        'category': w[1],
+        'total_attempts': w[2],
+        'correct_attempts': w[3],
+        'accuracy': w[4]
+    } for w in words]
+
+def get_practice_trend(days=7):
+    """
+    Phase 6: Get practice trend over last N days
+    Returns daily practice counts for line chart
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute(f"""
+        SELECT 
+            DATE(practiced_date) as practice_date,
+            COUNT(*) as practice_count,
+            SUM(CASE WHEN is_correct = 1 THEN 1 ELSE 0 END) as correct_count
+        FROM practices
+        WHERE DATE(practiced_date) >= DATE('now', '-{days} days')
+        GROUP BY DATE(practiced_date)
+        ORDER BY practice_date ASC
+    """)
+    
+    trend = cursor.fetchall()
+    conn.close()
+    
+    return [{
+        'date': t[0],
+        'total': t[1],
+        'correct': t[2]
+    } for t in trend]
+
+def get_recent_drawings(limit=10):
+    """
+    Phase 6: Get recent drawings with metadata for gallery
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT 
+            p.drawing_filename,
+            w.word,
+            p.is_correct,
+            p.practiced_date
+        FROM practices p
+        JOIN words w ON p.word_id = w.id
+        WHERE p.drawing_filename IS NOT NULL
+        ORDER BY p.practiced_date DESC
+        LIMIT ?
+    """, (limit,))
+    
+    drawings = cursor.fetchall()
+    conn.close()
+    
+    return [{
+        'filename': d[0],
+        'word': d[1],
+        'is_correct': bool(d[2]),
+        'practiced_date': d[3]
+    } for d in drawings]

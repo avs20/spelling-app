@@ -2,11 +2,11 @@
 
 A tablet-friendly web app for children to practice spelling while drawing objects. The app uses spaced repetition to optimize learning.
 
-**Current Phase:** Phase 5 - Admin Mode - Word Management (Complete)
+**Current Phase:** Phase 6 - Parent/Teacher Dashboard (Complete)
 
 ---
 
-## Features (Phase 1-5) ✓ COMPLETE
+## Features (Phase 1-6) ✓ COMPLETE
 
 **Phase 1 - MVP:**
 - **Drawing Canvas** - Large, touch-optimized canvas for drawing with pen/stylus
@@ -62,6 +62,16 @@ A tablet-friendly web app for children to practice spelling while drawing object
 - **Password Protection** - Simple password guard to prevent child access
 - **Auto-Initialization** - New words automatically ready for practice today
 
+**Phase 6 - Parent/Teacher Dashboard:**
+- **Progress Statistics** - Words completed today/this week, overall accuracy, total practices
+- **Practice Trend** - 7-day bar chart showing daily practice activity
+- **Word Performance** - Accuracy per word sorted by difficulty (hardest first)
+- **Drawing Gallery** - Recent 20 drawings with thumbnails, word names, and correct/incorrect badges
+- **Real-time Refresh** - Refresh button to reload latest data
+- **Color Indicators** - Visual highlighting for difficult words (accuracy < 70%)
+- **Dashboard Interface** - Clean, responsive dashboard at `/dashboard.html`
+- **API Endpoints** - `/api/dashboard/stats`, `/trend`, `/word-accuracy`, `/drawings`
+
 ---
 
 ## Project Structure
@@ -72,10 +82,12 @@ A tablet-friendly web app for children to practice spelling while drawing object
 │   ├── main.py              # FastAPI app with routes
 │   ├── database.py          # SQLite setup and queries
 │   ├── test_admin.py        # Phase 5 admin tests
+│   ├── test_dashboard.py    # Phase 6 dashboard tests
 │   └── requirements.txt     # Python dependencies
 ├── frontend/
 │   ├── index.html           # Main app page
 │   ├── admin.html           # Phase 5 admin panel
+│   ├── dashboard.html       # Phase 6 parent dashboard
 │   ├── style.css            # Styles
 │   ├── canvas.js            # Canvas drawing logic
 │   ├── api.js               # Backend API calls
@@ -241,6 +253,12 @@ Default test words: bee, spider, butterfly (insects category)
 - `PUT /api/admin/words/{id}` - Update word
 - `DELETE /api/admin/words/{id}` - Delete word
 
+**Dashboard Endpoints (Phase 6):**
+- `GET /api/dashboard/stats` - Get overall practice statistics
+- `GET /api/dashboard/word-accuracy` - Get accuracy per word
+- `GET /api/dashboard/trend?days=7` - Get practice trend
+- `GET /api/dashboard/drawings?limit=20` - Get recent drawings
+
 ---
 
 ## Development Phases
@@ -253,9 +271,9 @@ See [Plan.md](Plan.md) for detailed phase-by-phase development roadmap.
 - Phase 3 - Spelling Validation & Learning/Recall Modes ✓
 - Phase 4 - Spaced Repetition & Progress Tracking ✓
 - Phase 5 - Admin Mode (Word Management) ✓
+- Phase 6 - Parent Dashboard ✓
 
 **Planned:**
-- Phase 6 - Parent Dashboard
 - Phase 7 - Data Management & Performance
 - Phase 8 - Polish & Nice-to-Haves
 - Phase 9 - Testing & Tablet Compatibility

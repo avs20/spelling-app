@@ -14,7 +14,8 @@ import uuid
 from database import (
     init_db, get_word_for_practice, save_practice, get_all_words, get_word_by_id,
     update_word_on_success, get_words_for_today, add_word, update_word, delete_word,
-    get_all_words_admin
+    get_all_words_admin, get_practice_stats, get_word_accuracy, get_practice_trend,
+    get_recent_drawings
 )
 
 app = FastAPI()
@@ -33,6 +34,9 @@ init_db()
 
 # Serve frontend files
 app.mount("/static", StaticFiles(directory="../frontend"), name="static")
+
+# Serve drawings
+app.mount("/drawings", StaticFiles(directory="../data/drawings"), name="drawings")
 
 # Request/Response models
 class WordResponse(BaseModel):
@@ -225,6 +229,50 @@ async def admin_get_words():
     try:
         words = get_all_words_admin()
         return {"words": words}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/dashboard/stats")
+async def dashboard_stats():
+    """Phase 6: Get overall practice statistics"""
+    try:
+        stats = get_practice_stats()
+        return stats
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/dashboard/word-accuracy")
+async def dashboard_word_accuracy():
+    """Phase 6: Get accuracy per word"""
+    try:
+        words = get_word_accuracy()
+        return {"words": words}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/dashboard/trend")
+async def dashboard_trend(days: int = 7):
+    """Phase 6: Get practice trend"""
+    try:
+        trend = get_practice_trend(days)
+        return {"trend": trend}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/dashboard/drawings")
+async def dashboard_drawings(limit: int = 20):
+    """Phase 6: Get recent drawings"""
+    try:
+        drawings = get_recent_drawings(limit)
+        return {"drawings": drawings}
     except Exception as e:
         import traceback
         traceback.print_exc()

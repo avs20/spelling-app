@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parent Dashboard - Progress Tracking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 16px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .stat-card .value {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .word-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .word-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .word-item.difficult {
+            border-left-color: #e74c3c;
+        }
+
+        .word-info h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .word-info p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .word-stats {
+            text-align: right;
+        }
+
+        .accuracy {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .accuracy.low {
+            color: #e74c3c;
+        }
+
+        .trend-chart {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .chart-bars {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 200px;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .chart-bar-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .chart-bar {
+            width: 100%;
+            background: linear-gradient(to top, #667eea, #764ba2);
+            border-radius: 5px 5px 0 0;
+            min-height: 20px;
+            position: relative;
+        }
+
+        .chart-label {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+
+        .chart-value {
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .drawings-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .drawing-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .drawing-card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .drawing-info {
+            padding: 10px;
+            background: #f8f9fa;
+        }
+
+        .drawing-info h4 {
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .drawing-info p {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .badge.correct {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge.incorrect {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .btn-refresh {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .btn-refresh:hover {
+            background: #5568d3;
+        }
+
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Parent Dashboard</h1>
+        <p class="subtitle">Track your child's spelling progress and performance</p>
+
+        <div class="header-actions">
+            <button class="btn-refresh" onclick="loadDashboard()">🔄 Refresh</button>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Words Today</h3>
+                <div class="value" id="wordsToday">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Words This Week</h3>
+                <div class="value" id="wordsThisWeek">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Overall Accuracy</h3>
+                <div class="value" id="overallAccuracy">0%</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Practices</h3>
+                <div class="value" id="totalPractices">0</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>📈 Practice Trend (Last 7 Days)</h2>
+            <div class="trend-chart">
+                <div class="chart-bars" id="trendChart"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Word Performance (Sorted by Difficulty)</h2>
+            <div class="word-list" id="wordAccuracy"></div>
+        </div>
+
+        <div class="section">
+            <h2>🎨 Recent Drawings</h2>
+            <div class="drawings-gallery" id="drawingsGallery"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+
+        async function loadDashboard() {
+            await Promise.all([
+                loadStats(),
+                loadTrend(),
+                loadWordAccuracy(),
+                loadDrawings()
+            ]);
+        }
+
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_URL}/api/dashboard/stats`);
+                const stats = await response.json();
+
+                document.getElementById('wordsToday').textContent = stats.words_today || 0;
+                document.getElementById('wordsThisWeek').textContent = stats.words_this_week || 0;
+                document.getElementById('overallAccuracy').textContent = `${stats.overall_accuracy || 0}%`;
+                document.getElementById('totalPractices').textContent = stats.total_practices || 0;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadTrend() {
+            try {
+                const response = await fetch(`${API_URL}/api/dashboard/trend?days=7`);
+                const data = await response.json();
+                const trend = data.trend || [];
+
+                const chartBars = document.getElementById('trendChart');
+                chartBars.innerHTML = '';
+
+                if (trend.length === 0) {
+                    chartBars.innerHTML = '<p class="no-data">No practice data yet</p>';
+                    return;
+                }
+
+                const maxValue = Math.max(...trend.map(t => t.total), 1);
+
+                trend.forEach(item => {
+                    const container = document.createElement('div');
+                    container.className = 'chart-bar-container';
+
+                    const value = document.createElement('div');
+                    value.className = 'chart-value';
+                    value.textContent = item.total;
+
+                    const bar = document.createElement('div');
+                    bar.className = 'chart-bar';
+                    const height = (item.total / maxValue) * 180;
+                    bar.style.height = `${height}px`;
+
+                    const label = document.createElement('div');
+                    label.className = 'chart-label';
+                    const date = new Date(item.date);
+                    label.textContent = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                    container.appendChild(value);
+                    container.appendChild(bar);
+                    container.appendChild(label);
+                    chartBars.appendChild(container);
+                });
+            } catch (error) {
+                console.error('Error loading trend:', error);
+            }
+        }
+
+        async function loadWordAccuracy() {
+            try {
+                const response = await fetch(`${API_URL}/api/dashboard/word-accuracy`);
+                const data = await response.json();
+                const words = data.words || [];
+
+                const wordList = document.getElementById('wordAccuracy');
+                wordList.innerHTML = '';
+
+                if (words.length === 0) {
+                    wordList.innerHTML = '<p class="no-data">No practice data yet</p>';
+                    return;
+                }
+
+                words.forEach(word => {
+                    const item = document.createElement('div');
+                    item.className = 'word-item';
+                    if (word.accuracy < 70) {
+                        item.classList.add('difficult');
+                    }
+
+                    item.innerHTML = `
+                        <div class="word-info">
+                            <h3>${word.word}</h3>
+                            <p>${word.category} • ${word.correct_attempts}/${word.total_attempts} correct</p>
+                        </div>
+                        <div class="word-stats">
+                            <div class="accuracy ${word.accuracy < 70 ? 'low' : ''}">${word.accuracy}%</div>
+                        </div>
+                    `;
+
+                    wordList.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Error loading word accuracy:', error);
+            }
+        }
+
+        async function loadDrawings() {
+            try {
+                const response = await fetch(`${API_URL}/api/dashboard/drawings?limit=20`);
+                const data = await response.json();
+                const drawings = data.drawings || [];
+
+                const gallery = document.getElementById('drawingsGallery');
+                gallery.innerHTML = '';
+
+                if (drawings.length === 0) {
+                    gallery.innerHTML = '<p class="no-data">No drawings yet</p>';
+                    return;
+                }
+
+                drawings.forEach(drawing => {
+                    const card = document.createElement('div');
+                    card.className = 'drawing-card';
+
+                    const date = new Date(drawing.practiced_date);
+                    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                    card.innerHTML = `
+                        <img src="${API_URL}/drawings/${drawing.filename}" alt="${drawing.word}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22150%22 height=%22150%22><rect width=%22150%22 height=%22150%22 fill=%22%23ddd%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23666%22>No Image</text></svg>'" />
+                        <div class="drawing-info">
+                            <h4>${drawing.word}</h4>
+                            <p>${dateStr}</p>
+                            <span class="badge ${drawing.is_correct ? 'correct' : 'incorrect'}">
+                                ${drawing.is_correct ? '✓ Correct' : '✗ Incorrect'}
+                            </span>
+                        </div>
+                    `;
+
+                    gallery.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Error loading drawings:', error);
+            }
+        }
+
+        loadDashboard();
+    </script>
+</body>
+</html>
