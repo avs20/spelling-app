@@ -116,7 +116,32 @@ class SpellingApp {
     }
 
     updateSpelledDisplay() {
-        this.spelledDisplay.textContent = this.spelledLetters.join('');
+        /**
+         * Show spelled letters as clickable elements
+         * Tap a letter to remove it
+         */
+        this.spelledDisplay.innerHTML = '';
+        
+        this.spelledLetters.forEach((letter, index) => {
+            const letterSpan = document.createElement('span');
+            letterSpan.className = 'spelled-letter';
+            letterSpan.textContent = letter;
+            letterSpan.style.cursor = 'pointer';
+            letterSpan.addEventListener('click', () => this.removeLetter(index));
+            letterSpan.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                this.removeLetter(index);
+            });
+            this.spelledDisplay.appendChild(letterSpan);
+        });
+    }
+
+    removeLetter(index) {
+        /**
+         * Remove a letter from the spelled word at given index
+         */
+        this.spelledLetters.splice(index, 1);
+        this.updateSpelledDisplay();
     }
 
     undo() {

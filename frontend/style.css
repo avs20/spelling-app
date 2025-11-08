@@ -212,6 +212,31 @@ main {
     text-align: center;
     min-height: 40px;
     letter-spacing: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.spelled-letter {
+    background-color: var(--secondary-color);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    transition: all 0.2s;
+    display: inline-block;
+    user-select: none;
+}
+
+.spelled-letter:hover {
+    background-color: var(--danger-color);
+    transform: scale(1.1);
+}
+
+.spelled-letter:active {
+    transform: scale(0.95);
 }
 
 /* Submit Section */
