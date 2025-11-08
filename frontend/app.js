@@ -8,6 +8,7 @@ class SpellingApp {
         this.currentWord = null;
         this.currentWordId = null;
         this.spelledLetters = [];
+        this.attemptCount = 0;  // Track attempts per word per session
         
         // Audio context for sound effects
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -21,6 +22,8 @@ class SpellingApp {
         this.wordDisplay = document.getElementById('word-display');
         this.lettersContainer = document.getElementById('letters-container');
         this.spelledDisplay = document.getElementById('spelled-display');
+        this.modeIndicator = document.getElementById('mode-indicator');
+        this.feedbackMessage = document.getElementById('feedback-message');
         
         this.undoBtn = document.getElementById('undo-btn');
         this.redoBtn = document.getElementById('redo-btn');
@@ -65,31 +68,53 @@ class SpellingApp {
         this.currentWord = wordData.word;
         this.currentWordId = wordData.id;
         this.spelledLetters = [];
+        this.attemptCount = 0;  // Reset attempt count for new word
         
         this.wordDisplay.textContent = this.currentWord;
         this.renderLetters();
         this.updateSpelledDisplay();
+        this.updateModeIndicator();
+        this.clearFeedback();
         canvas.clear();
         this.updateUndoRedoButtons();
     }
 
     renderLetters() {
         /**
-         * Phase 1: Learning Mode - All letters visible (shuffled)
-         * Child taps letters in order to spell the word
+         * Phase 3: Mode switching
+         * Learning Mode (attempts 1-2): All letters visible (shuffled)
+         * Recall Mode (attempt 3+): Text input field
          */
         this.lettersContainer.innerHTML = '';
         
-        const letters = this.currentWord.toUpperCase().split('');
-        const shuffledLetters = this.shuffleArray([...letters]);
-        
-        shuffledLetters.forEach((letter, index) => {
-            const btn = document.createElement('button');
-            btn.className = 'letter-btn';
-            btn.textContent = letter;
-            btn.addEventListener('click', () => this.selectLetter(letter, index));
-            this.lettersContainer.appendChild(btn);
-        });
+        if (this.attemptCount < 2) {
+            // Learning Mode: Show letters
+            const letters = this.currentWord.toUpperCase().split('');
+            const shuffledLetters = this.shuffleArray([...letters]);
+            
+            shuffledLetters.forEach((letter, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'letter-btn';
+                btn.textContent = letter;
+                btn.addEventListener('click', () => this.selectLetter(letter, index));
+                this.lettersContainer.appendChild(btn);
+            });
+        } else {
+            // Recall Mode: Show text input
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = 'recall-input';
+            input.className = 'recall-input';
+            input.placeholder = 'Type the word...';
+            input.maxLength = this.currentWord.length;
+            input.addEventListener('input', (e) => this.handleRecallInput(e));
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') this.submitPractice();
+            });
+            this.lettersContainer.appendChild(input);
+            // Auto-focus on input
+            setTimeout(() => input.focus(), 100);
+        }
     }
 
     shuffleArray(array) {
@@ -106,13 +131,23 @@ class SpellingApp {
 
     selectLetter(letter, correctIndex) {
         /**
-         * Track which letter was selected
-         * In Phase 1, we just append it to spelled letters
+         * Handle letter selection in Learning Mode
+         * Append to spelled letters if space available
          */
         if (this.spelledLetters.length < this.currentWord.length) {
             this.spelledLetters.push(letter);
             this.updateSpelledDisplay();
         }
+    }
+
+    handleRecallInput(e) {
+        /**
+         * Handle text input in Recall Mode
+         * Store typed letters as spelledLetters
+         */
+        const input = e.target;
+        this.spelledLetters = input.value.toUpperCase().split('');
+        this.updateSpelledDisplay();
     }
 
     updateSpelledDisplay() {
@@ -187,6 +222,42 @@ class SpellingApp {
         this.updateUndoRedoButtons();
     }
 
+    updateModeIndicator() {
+        /**
+         * Show current mode (Learning or Recall)
+         */
+        if (this.modeIndicator) {
+            if (this.attemptCount < 2) {
+                this.modeIndicator.textContent = `Learning Mode (Attempt ${this.attemptCount + 1}/2)`;
+                this.modeIndicator.className = 'mode-learning';
+            } else {
+                this.modeIndicator.textContent = `Recall Mode (Attempt ${this.attemptCount + 1})`;
+                this.modeIndicator.className = 'mode-recall';
+            }
+        }
+    }
+
+    showFeedback(isCorrect, message) {
+        /**
+         * Show feedback message with animation
+         */
+        if (this.feedbackMessage) {
+            this.feedbackMessage.textContent = message;
+            this.feedbackMessage.className = isCorrect ? 'feedback-correct' : 'feedback-incorrect';
+            this.feedbackMessage.style.display = 'block';
+            this.feedbackMessage.style.animation = 'fadeInScale 0.5s ease-out';
+        }
+    }
+
+    clearFeedback() {
+        /**
+         * Clear feedback message
+         */
+        if (this.feedbackMessage) {
+            this.feedbackMessage.style.display = 'none';
+        }
+    }
+
     playSound(type = 'correct') {
         /**
          * Play sound effect
@@ -240,15 +311,32 @@ class SpellingApp {
 
     async submitPractice() {
         if (!this.currentWordId || this.spelledLetters.length === 0) {
-            alert('Please draw and spell the word first');
+            this.showFeedback(false, 'Please spell the word first');
             return;
         }
 
         const spelledWord = this.spelledLetters.join('').toLowerCase();
         const isCorrect = spelledWord === this.currentWord.toLowerCase();
+        this.attemptCount++;
 
         // Haptic feedback
         this.hapticFeedback();
+
+        // Show immediate feedback with animation
+        if (isCorrect) {
+            this.playSound('correct');
+            this.showFeedback(true, 'Correct! Well done! 🎉');
+        } else {
+            this.playSound('incorrect');
+            if (this.attemptCount >= 2 && this.attemptCount < 3) {
+                // Transitioning to Recall Mode
+                this.showFeedback(false, `Not quite. Try again! (Will be Recall Mode next attempt)`);
+            } else if (this.attemptCount >= 3) {
+                this.showFeedback(false, `The word is: ${this.currentWord}`);
+            } else {
+                this.showFeedback(false, 'Not quite right. Try again!');
+            }
+        }
 
         // Get drawing as blob
         const drawingBlob = await canvas.getImageData();
@@ -257,23 +345,27 @@ class SpellingApp {
         const result = await API.submitPractice(
             this.currentWordId,
             spelledWord,
-            drawingBlob
+            drawingBlob,
+            isCorrect
         );
 
         if (result.success) {
-            // Show feedback with sound
+            // If correct, load next word after delay
             if (isCorrect) {
-                this.playSound('correct');
-                alert('Correct! Well done! 🎉');
+                setTimeout(() => this.loadNextWord(), 2000);
             } else {
-                this.playSound('incorrect');
-                alert(`Not quite right. The word is: ${this.currentWord}`);
+                // If incorrect, prepare for next attempt
+                setTimeout(() => {
+                    this.spelledLetters = [];
+                    this.updateSpelledDisplay();
+                    this.renderLetters();
+                    this.updateModeIndicator();
+                    this.clearFeedback();
+                    canvas.clear();
+                }, 2000);
             }
-
-            // Load next word
-            await this.loadNextWord();
         } else {
-            alert('Error saving practice. Please try again.');
+            this.showFeedback(false, 'Error saving. Please try again.');
         }
     }
 }

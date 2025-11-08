@@ -74,7 +74,8 @@ async def next_word():
 async def submit_practice(
     word_id: int = Form(...),
     spelled_word: str = Form(...),
-    drawing: UploadFile = File(...)
+    drawing: UploadFile = File(...),
+    is_correct: str = Form(...)
 ):
     """Submit practice: save drawing + spelling"""
     try:
@@ -93,8 +94,9 @@ async def submit_practice(
         # Save practice record
         word_data = get_word_by_id(word_id)
         if word_data:
-            is_correct = spelled_word.lower() == word_data[0].lower()
-            save_practice(word_id, spelled_word, is_correct, filename)
+            # Convert string 'true'/'false' to boolean
+            is_correct_bool = is_correct.lower() == 'true'
+            save_practice(word_id, spelled_word, is_correct_bool, filename)
         else:
             raise Exception("Word not found")
         

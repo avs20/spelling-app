@@ -38,12 +38,13 @@ class API {
         }
     }
 
-    static async submitPractice(wordId, spelledWord, drawingBlob) {
+    static async submitPractice(wordId, spelledWord, drawingBlob, isCorrect) {
         try {
             const formData = new FormData();
             formData.append('word_id', wordId);
             formData.append('spelled_word', spelledWord);
             formData.append('drawing', drawingBlob, 'drawing.png');
+            formData.append('is_correct', isCorrect);
 
             const response = await fetch(`${API_BASE}/practice`, {
                 method: 'POST',

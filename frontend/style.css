@@ -248,6 +248,94 @@ main {
     border-color: var(--danger-color);
 }
 
+/* Mode Indicator */
+.mode-indicator {
+    text-align: center;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-weight: bold;
+    font-size: 0.95rem;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s;
+}
+
+.mode-learning {
+    background-color: #E3F2FD;
+    color: var(--secondary-color);
+    border-left: 4px solid var(--secondary-color);
+}
+
+.mode-recall {
+    background-color: #FFF3E0;
+    color: #FF9800;
+    border-left: 4px solid #FF9800;
+}
+
+/* Feedback Message */
+.feedback-message {
+    text-align: center;
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    background-color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    margin-bottom: 10px;
+}
+
+.feedback-correct {
+    background-color: #C8E6C9;
+    color: #2E7D32;
+    border: 2px solid var(--primary-color);
+}
+
+.feedback-incorrect {
+    background-color: #FFCDD2;
+    color: #C62828;
+    border: 2px solid var(--danger-color);
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Recall Input */
+.recall-input {
+    width: 100%;
+    max-width: 300px;
+    padding: 15px;
+    font-size: 1.3rem;
+    text-align: center;
+    border: 3px solid var(--secondary-color);
+    border-radius: 8px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.recall-input:focus {
+    outline: none;
+    border-color: #1976D2;
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.3);
+    background-color: #F5F5F5;
+}
+
+.recall-input::placeholder {
+    color: #999;
+    letter-spacing: normal;
+    text-transform: none;
+}
+
 /* Submit Section */
 .submit-section {
     text-align: center;
