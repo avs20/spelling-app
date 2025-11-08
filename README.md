@@ -2,12 +2,13 @@
 
 A tablet-friendly web app for children to practice spelling while drawing objects. The app uses spaced repetition to optimize learning.
 
-**Current Phase:** Phase 1 - MVP (Core Canvas & Basic Spelling)
+**Current Phase:** Phase 2 - Canvas Polish & UX (Complete)
 
 ---
 
-## Features (Phase 1) ✓ COMPLETE
+## Features (Phase 1-2) ✓ COMPLETE
 
+**Phase 1 - MVP:**
 - **Drawing Canvas** - Large, touch-optimized canvas for drawing with pen/stylus
 - **Pen Mode** - Draw with adjustable pen color
 - **Eraser Mode** - Large eraser (20px) for child-friendly corrections
@@ -22,6 +23,14 @@ A tablet-friendly web app for children to practice spelling while drawing object
 - **API Backend** - FastAPI with SQLite database
 - **CORS Support** - Frontend and backend communication enabled
 - **Touch Support** - Full touch and stylus support for tablets
+
+**Phase 2 - Canvas Polish & UX:**
+- **Undo/Redo** - Up to 10 steps, easy mistake correction
+- **Brush Size Slider** - Adjustable pen width (1-15px) for different drawing styles
+- **Sound Effects** - Ascending tone for correct, descending for incorrect
+- **Haptic Feedback** - Vibration on submit (on supported devices)
+- **Responsive Design** - Optimized for tablets and different screen sizes
+- **Polish UI** - Child-friendly buttons, smooth interactions
 
 ---
 

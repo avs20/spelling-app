@@ -14,6 +14,11 @@ class DrawingCanvas {
         this.eraserSize = 20; // Large eraser for children
         this.isDrawing = false;
         
+        // Undo/Redo functionality
+        this.history = [];
+        this.historyStep = -1;
+        this.maxHistory = 10;
+        
         this.setupCanvas();
         this.setupEventListeners();
     }
@@ -29,6 +34,9 @@ class DrawingCanvas {
         
         // Set initial cursor
         this.updateCursor();
+        
+        // Save initial state
+        this.saveHistory();
     }
 
     resizeCanvas() {
@@ -85,8 +93,12 @@ class DrawingCanvas {
     }
 
     stopDrawing() {
-        this.isDrawing = false;
-        this.ctx.closePath();
+        if (this.isDrawing) {
+            this.isDrawing = false;
+            this.ctx.closePath();
+            // Save state after drawing
+            this.saveHistory();
+        }
     }
 
     getPosition(e) {
@@ -137,6 +149,7 @@ class DrawingCanvas {
     clear() {
         this.ctx.fillStyle = 'white';
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        this.saveHistory();
     }
 
     getImageData() {
@@ -147,6 +160,65 @@ class DrawingCanvas {
         return new Promise(resolve => {
             this.canvas.toBlob(resolve, 'image/png');
         });
+    }
+
+    saveHistory() {
+        /**
+         * Save current canvas state to history
+         * Keeps only maxHistory states
+         */
+        // Remove any states after current position (if user did undo + new action)
+        this.history = this.history.slice(0, this.historyStep + 1);
+        
+        // Add current state
+        this.history.push(this.canvas.toDataURL());
+        this.historyStep++;
+        
+        // Limit history to maxHistory
+        if (this.history.length > this.maxHistory) {
+            this.history.shift();
+            this.historyStep--;
+        }
+    }
+
+    undo() {
+        /**
+         * Undo last action
+         */
+        if (this.historyStep > 0) {
+            this.historyStep--;
+            this.restoreHistory();
+        }
+    }
+
+    redo() {
+        /**
+         * Redo last undone action
+         */
+        if (this.historyStep < this.history.length - 1) {
+            this.historyStep++;
+            this.restoreHistory();
+        }
+    }
+
+    restoreHistory() {
+        /**
+         * Restore canvas from history state
+         */
+        const img = new Image();
+        img.src = this.history[this.historyStep];
+        img.onload = () => {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            this.ctx.drawImage(img, 0, 0);
+        };
+    }
+
+    canUndo() {
+        return this.historyStep > 0;
+    }
+
+    canRedo() {
+        return this.historyStep < this.history.length - 1;
     }
 }
 

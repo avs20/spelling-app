@@ -19,6 +19,13 @@
             <!-- Canvas Section -->
             <section class="canvas-section">
                 <div class="canvas-toolbar">
+                    <button id="undo-btn" class="toolbar-btn" title="Undo">
+                        ↶ Undo
+                    </button>
+                    <button id="redo-btn" class="toolbar-btn" title="Redo">
+                        ↷ Redo
+                    </button>
+                    <div class="toolbar-divider"></div>
                     <button id="clear-btn" class="toolbar-btn" title="Clear Canvas">
                         🗑️ Clear
                     </button>
@@ -33,6 +40,11 @@
                     <label for="color-picker" title="Pick Color">
                         🎨
                         <input type="color" id="color-picker" value="#000000">
+                    </label>
+                    <div class="toolbar-divider"></div>
+                    <label for="pen-size" title="Pen Size" class="size-label">
+                        Size:
+                        <input type="range" id="pen-size" min="1" max="15" value="3">
                     </label>
                 </div>
 
