@@ -2,6 +2,48 @@
 
 ## Automated Tests
 
+### 0. Visual Regression Tests (Screenshots)
+**Automated screenshot capture of all app screens and states**
+
+```bash
+./run-visual-tests.sh
+```
+
+This will:
+- ✅ Capture 17 screenshots of all pages and states
+- ✅ Test desktop, mobile, and tablet viewports
+- ✅ Test light and dark modes
+- ✅ Create an HTML index to view all screenshots
+- ✅ Save to `test-screenshots/` directory
+
+**Screenshots captured:**
+1. Main app - Initial load
+2. Main app - Pen mode
+3. Main app - Eraser mode
+4. Main app - Color picker
+5. Main app - Dark mode
+6. Main app - Progress badge
+7. Admin - Login page
+8. Admin - Dashboard
+9. Admin - Add word form
+10. Parent dashboard - Main view
+11. Parent dashboard - Word performance
+12. Parent dashboard - Drawings gallery
+13. Compatibility test page
+14. Mobile viewport (375×812)
+15. Mobile dashboard
+16. Tablet viewport (1024×768)
+17. Tablet landscape
+
+**Requirements:**
+```bash
+cd backend
+~/.local/bin/uv pip install playwright
+~/.local/bin/uv run playwright install chromium
+```
+
+## Automated Tests
+
 ### 1. Compatibility Test Suite
 Access the automated compatibility tests at:
 ```
