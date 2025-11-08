@@ -2,11 +2,11 @@
 
 A tablet-friendly web app for children to practice spelling while drawing objects. The app uses spaced repetition to optimize learning.
 
-**Current Phase:** Phase 2 - Canvas Polish & UX (Complete)
+**Current Phase:** Phase 3 - Spelling Validation & Learning/Recall Modes (Complete) | Phase 4 - Spaced Repetition (In Progress)
 
 ---
 
-## Features (Phase 1-2) ✓ COMPLETE
+## Features (Phase 1-3) ✓ COMPLETE
 
 **Phase 1 - MVP:**
 - **Drawing Canvas** - Large, touch-optimized canvas for drawing with pen/stylus
@@ -32,6 +32,16 @@ A tablet-friendly web app for children to practice spelling while drawing object
 - **Haptic Feedback** - Vibration on submit (on supported devices)
 - **Responsive Design** - Optimized for tablets and different screen sizes
 - **Polish UI** - Child-friendly buttons, smooth interactions
+
+**Phase 3 - Spelling Validation & Learning/Recall Modes:**
+- **Spelling Auto-Validation** - Real-time feedback (correct/incorrect)
+- **Learning Mode** - All letters visible for first 2 successful days
+- **Recall Mode** - Type word from memory after 2 successful days
+- **Animated Feedback** - Green for correct, red for incorrect with scaling animation
+- **Mode Indicator** - Shows current mode and attempt tracking
+- **Keep-Trying Logic** - Child keeps attempting until correct within one session
+- **Session-Level Attempts** - Tracks attempts within a practice session
+- **Sound & Haptic Feedback** - Audio confirmation with vibration
 
 ---
 
@@ -157,12 +167,15 @@ The app will automatically connect to the backend and load the first word.
 
 The app uses SQLite with two main tables:
 
-### Words Table
+### Words Table (Phase 4 Update)
 ```sql
 CREATE TABLE words (
     id INTEGER PRIMARY KEY,
     word TEXT NOT NULL UNIQUE,
     category TEXT NOT NULL,
+    successful_days INTEGER DEFAULT 0,
+    last_practiced DATE,
+    next_review DATE,
     created_date TIMESTAMP
 );
 ```
@@ -175,11 +188,18 @@ CREATE TABLE practices (
     spelled_word TEXT NOT NULL,
     is_correct BOOLEAN NOT NULL,
     drawing_filename TEXT,
-    practiced_date TIMESTAMP
+    practiced_date TIMESTAMP,
+    FOREIGN KEY (word_id) REFERENCES words(id)
 );
 ```
 
 Default test words: bee, spider, butterfly (insects category)
+
+### Key Tracking Fields:
+- **successful_days**: How many different days child successfully practiced (max counts once per day)
+- **last_practiced**: Last date of successful practice
+- **next_review**: When to show word next (never before this date)
+- **is_correct**: Whether practice attempt was correct (for logging)
 
 ---
 
@@ -196,8 +216,21 @@ Default test words: bee, spider, butterfly (insects category)
 
 See [Plan.md](Plan.md) for detailed phase-by-phase development roadmap.
 
-**Current:** Phase 1 - MVP
-**Next:** Phase 2 - Canvas Polish & UX
+**Complete:**
+- Phase 1 - MVP ✓
+- Phase 2 - Canvas Polish & UX ✓
+- Phase 3 - Spelling Validation & Learning/Recall Modes ✓
+
+**In Progress:**
+- Phase 4 - Spaced Repetition & Progress Tracking
+
+**Planned:**
+- Phase 5 - Admin Mode (Word Management)
+- Phase 6 - Parent Dashboard
+- Phase 7 - Data Management & Performance
+- Phase 8 - Polish & Nice-to-Haves
+- Phase 9 - Testing & Tablet Compatibility
+- Phase 10 - Launch & Expansion
 
 ---
 
