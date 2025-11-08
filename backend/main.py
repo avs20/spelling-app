@@ -17,6 +17,9 @@ from database import (
     get_all_words_admin, get_practice_stats, get_word_accuracy, get_practice_trend,
     get_recent_drawings
 )
+from data_management import (
+    cleanup_old_drawings, get_storage_stats, optimize_database, create_backup
+)
 
 app = FastAPI()
 
@@ -273,6 +276,56 @@ async def dashboard_drawings(limit: int = 20):
     try:
         drawings = get_recent_drawings(limit)
         return {"drawings": drawings}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/data/storage-stats")
+async def get_storage():
+    """Phase 7: Get storage statistics"""
+    try:
+        stats = get_storage_stats()
+        return stats
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/data/cleanup")
+async def cleanup_data(keep_per_word: int = 10):
+    """Phase 7: Cleanup old drawings"""
+    try:
+        deleted = cleanup_old_drawings(keep_per_word)
+        return {"success": True, "deleted_count": deleted, "message": f"Deleted {deleted} old drawings"}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/data/optimize")
+async def optimize_db():
+    """Phase 7: Optimize database"""
+    try:
+        success = optimize_database()
+        if success:
+            return {"success": True, "message": "Database optimized successfully"}
+        else:
+            raise HTTPException(status_code=500, detail="Optimization failed")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/data/backup")
+async def backup_data():
+    """Phase 7: Create database backup"""
+    try:
+        filename = create_backup()
+        if filename:
+            return {"success": True, "filename": filename, "message": f"Backup created: {filename}"}
+        else:
+            raise HTTPException(status_code=500, detail="Backup failed")
     except Exception as e:
         import traceback
         traceback.print_exc()

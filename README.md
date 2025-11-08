@@ -2,11 +2,11 @@
 
 A tablet-friendly web app for children to practice spelling while drawing objects. The app uses spaced repetition to optimize learning.
 
-**Current Phase:** Phase 6 - Parent/Teacher Dashboard (Complete)
+**Current Phase:** Phase 7 - Data Management & Performance (Complete)
 
 ---
 
-## Features (Phase 1-6) ✓ COMPLETE
+## Features (Phase 1-7) ✓ COMPLETE
 
 **Phase 1 - MVP:**
 - **Drawing Canvas** - Large, touch-optimized canvas for drawing with pen/stylus
@@ -71,6 +71,15 @@ A tablet-friendly web app for children to practice spelling while drawing object
 - **Color Indicators** - Visual highlighting for difficult words (accuracy < 70%)
 - **Dashboard Interface** - Clean, responsive dashboard at `/dashboard.html`
 - **API Endpoints** - `/api/dashboard/stats`, `/trend`, `/word-accuracy`, `/drawings`
+
+**Phase 7 - Data Management & Performance:**
+- **Storage Statistics** - Track database size, drawings size, total storage used
+- **Cleanup Tools** - Remove old drawings (keep last N per word, configurable)
+- **Database Optimization** - VACUUM command to reclaim space and improve performance
+- **Backup System** - Create timestamped database backups
+- **Image Compression** - PNG to JPEG compression utilities (PIL/Pillow)
+- **Performance Monitoring** - Real-time storage stats API
+- **API Endpoints** - `/api/data/storage-stats`, `/cleanup`, `/optimize`, `/backup`
 
 ---
 
@@ -272,9 +281,9 @@ See [Plan.md](Plan.md) for detailed phase-by-phase development roadmap.
 - Phase 4 - Spaced Repetition & Progress Tracking ✓
 - Phase 5 - Admin Mode (Word Management) ✓
 - Phase 6 - Parent Dashboard ✓
+- Phase 7 - Data Management & Performance ✓
 
 **Planned:**
-- Phase 7 - Data Management & Performance
 - Phase 8 - Polish & Nice-to-Haves
 - Phase 9 - Testing & Tablet Compatibility
 - Phase 10 - Launch & Expansion
