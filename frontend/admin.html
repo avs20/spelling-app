@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Word Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .auth-section {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .auth-section input {
+            padding: 12px 20px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            margin-right: 10px;
+        }
+
+        .auth-section button {
+            padding: 12px 30px;
+            font-size: 18px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .auth-section button:hover {
+            background: #5568d3;
+        }
+
+        .admin-content {
+            display: none;
+        }
+
+        .add-word-form {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .words-list {
+            margin-top: 30px;
+        }
+
+        .word-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .word-info {
+            flex-grow: 1;
+        }
+
+        .word-info h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .word-info p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .word-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .logout-btn {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="auth-section" id="authSection">
+            <h1>🔒 Admin Access</h1>
+            <p style="margin-bottom: 20px;">Enter password to access word management</p>
+            <input type="password" id="passwordInput" placeholder="Password" />
+            <button onclick="authenticate()">Login</button>
+            <p id="authError" style="color: red; margin-top: 10px;"></p>
+        </div>
+
+        <div class="admin-content" id="adminContent">
+            <div class="logout-btn">
+                <button class="btn btn-secondary" onclick="logout()">Logout</button>
+            </div>
+
+            <h1>📝 Word Management</h1>
+
+            <div id="messageBox"></div>
+
+            <div class="add-word-form">
+                <h2>Add New Word</h2>
+                <form id="addWordForm" onsubmit="addWord(event)">
+                    <div class="form-group">
+                        <label for="wordInput">Word:</label>
+                        <input type="text" id="wordInput" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="categoryInput">Category:</label>
+                        <input type="text" id="categoryInput" placeholder="e.g., insects, animals, colors" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="referenceImage">Reference Image (optional):</label>
+                        <input type="file" id="referenceImage" accept="image/*" />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Word</button>
+                </form>
+            </div>
+
+            <div class="words-list">
+                <h2>All Words</h2>
+                <div id="wordsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+        const ADMIN_PASSWORD = 'admin123';
+
+        function authenticate() {
+            const password = document.getElementById('passwordInput').value;
+            const authError = document.getElementById('authError');
+
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('authSection').style.display = 'none';
+                document.getElementById('adminContent').style.display = 'block';
+                loadWords();
+            } else {
+                authError.textContent = 'Incorrect password';
+            }
+        }
+
+        function logout() {
+            document.getElementById('authSection').style.display = 'block';
+            document.getElementById('adminContent').style.display = 'none';
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('authError').textContent = '';
+        }
+
+        function showMessage(message, type) {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.innerHTML = `<div class="message ${type}">${message}</div>`;
+            setTimeout(() => {
+                messageBox.innerHTML = '';
+            }, 5000);
+        }
+
+        async function addWord(event) {
+            event.preventDefault();
+
+            const word = document.getElementById('wordInput').value;
+            const category = document.getElementById('categoryInput').value;
+            const referenceImage = document.getElementById('referenceImage').files[0];
+
+            const formData = new FormData();
+            formData.append('word', word);
+            formData.append('category', category);
+            if (referenceImage) {
+                formData.append('reference_image', referenceImage);
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/words`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(data.message, 'success');
+                    document.getElementById('addWordForm').reset();
+                    loadWords();
+                } else {
+                    showMessage(data.detail || 'Error adding word', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Failed to add word. Check connection.', 'error');
+            }
+        }
+
+        async function loadWords() {
+            try {
+                const response = await fetch(`${API_URL}/api/admin/words`);
+                const data = await response.json();
+
+                const wordsList = document.getElementById('wordsList');
+                wordsList.innerHTML = '';
+
+                if (data.words && data.words.length > 0) {
+                    data.words.forEach(word => {
+                        const wordItem = document.createElement('div');
+                        wordItem.className = 'word-item';
+                        wordItem.innerHTML = `
+                            <div class="word-info">
+                                <h3>${word.word}</h3>
+                                <p>Category: ${word.category} | Successful Days: ${word.successful_days || 0} | Next Review: ${word.next_review || 'N/A'}</p>
+                            </div>
+                            <div class="word-actions">
+                                <button class="btn btn-danger" onclick="deleteWord(${word.id}, '${word.word}')">Delete</button>
+                            </div>
+                        `;
+                        wordsList.appendChild(wordItem);
+                    });
+                } else {
+                    wordsList.innerHTML = '<p>No words found. Add your first word above!</p>';
+                }
+            } catch (error) {
+                console.error('Error loading words:', error);
+                showMessage('Failed to load words', 'error');
+            }
+        }
+
+        async function deleteWord(wordId, wordText) {
+            if (!confirm(`Are you sure you want to delete "${wordText}"? This will also delete all practice records.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/words/${wordId}`, {
+                    method: 'DELETE'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(data.message, 'success');
+                    loadWords();
+                } else {
+                    showMessage(data.detail || 'Error deleting word', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Failed to delete word', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

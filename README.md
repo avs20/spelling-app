@@ -2,11 +2,11 @@
 
 A tablet-friendly web app for children to practice spelling while drawing objects. The app uses spaced repetition to optimize learning.
 
-**Current Phase:** Phase 4 - Spaced Repetition & Progress Tracking (Complete)
+**Current Phase:** Phase 5 - Admin Mode - Word Management (Complete)
 
 ---
 
-## Features (Phase 1-4) ✓ COMPLETE
+## Features (Phase 1-5) ✓ COMPLETE
 
 **Phase 1 - MVP:**
 - **Drawing Canvas** - Large, touch-optimized canvas for drawing with pen/stylus
@@ -52,6 +52,16 @@ A tablet-friendly web app for children to practice spelling while drawing object
 - **Progress Persistence** - All tracking data persists across sessions and days
 - **API Endpoints** - `/api/next-word` returns `successful_days`, `/api/words-for-today` for dashboard
 
+**Phase 5 - Admin Mode - Word Management:**
+- **Admin Interface** - Dedicated admin panel at `/admin.html` with password protection
+- **Add Words** - Form to add new words with category and optional reference image
+- **Delete Words** - Remove words and all associated practice records
+- **Word List** - View all words with metadata (successful_days, next_review, category)
+- **Reference Images** - Upload and store reference images for each word
+- **API Endpoints** - Full CRUD: POST/GET/PUT/DELETE at `/api/admin/words`
+- **Password Protection** - Simple password guard to prevent child access
+- **Auto-Initialization** - New words automatically ready for practice today
+
 ---
 
 ## Project Structure
@@ -61,15 +71,18 @@ A tablet-friendly web app for children to practice spelling while drawing object
 ├── backend/
 │   ├── main.py              # FastAPI app with routes
 │   ├── database.py          # SQLite setup and queries
+│   ├── test_admin.py        # Phase 5 admin tests
 │   └── requirements.txt     # Python dependencies
 ├── frontend/
 │   ├── index.html           # Main app page
+│   ├── admin.html           # Phase 5 admin panel
 │   ├── style.css            # Styles
 │   ├── canvas.js            # Canvas drawing logic
 │   ├── api.js               # Backend API calls
 │   └── app.js               # Main app orchestration
 ├── data/
 │   ├── drawings/            # Saved drawing images
+│   ├── references/          # Phase 5 reference images
 │   └── spelling.db          # SQLite database
 ├── Plan.md                  # Phase-by-phase development plan
 ├── Agents.md                # Development guidelines
@@ -176,7 +189,7 @@ The app will automatically connect to the backend and load the first word.
 
 The app uses SQLite with two main tables:
 
-### Words Table (Phase 4 Update)
+### Words Table (Phase 4 & 5 Updates)
 ```sql
 CREATE TABLE words (
     id INTEGER PRIMARY KEY,
@@ -185,6 +198,7 @@ CREATE TABLE words (
     successful_days INTEGER DEFAULT 0,
     last_practiced DATE,
     next_review DATE,
+    reference_image TEXT,
     created_date TIMESTAMP
 );
 ```
@@ -212,12 +226,20 @@ Default test words: bee, spider, butterfly (insects category)
 
 ---
 
-## API Endpoints (Phase 1)
+## API Endpoints
 
+**Practice Endpoints:**
 - `GET /api/health` - Check API status
 - `GET /api/words` - Get all words
 - `GET /api/next-word` - Get next word to practice
+- `GET /api/words-for-today` - Get all words ready for practice today
 - `POST /api/practice` - Submit drawing + spelling
+
+**Admin Endpoints (Phase 5):**
+- `GET /api/admin/words` - Get all words with full details
+- `POST /api/admin/words` - Add new word
+- `PUT /api/admin/words/{id}` - Update word
+- `DELETE /api/admin/words/{id}` - Delete word
 
 ---
 
@@ -230,9 +252,9 @@ See [Plan.md](Plan.md) for detailed phase-by-phase development roadmap.
 - Phase 2 - Canvas Polish & UX ✓
 - Phase 3 - Spelling Validation & Learning/Recall Modes ✓
 - Phase 4 - Spaced Repetition & Progress Tracking ✓
+- Phase 5 - Admin Mode (Word Management) ✓
 
 **Planned:**
-- Phase 5 - Admin Mode (Word Management)
 - Phase 6 - Parent Dashboard
 - Phase 7 - Data Management & Performance
 - Phase 8 - Polish & Nice-to-Haves

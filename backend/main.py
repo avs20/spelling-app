@@ -13,7 +13,8 @@ import os
 import uuid
 from database import (
     init_db, get_word_for_practice, save_practice, get_all_words, get_word_by_id,
-    update_word_on_success, get_words_for_today
+    update_word_on_success, get_words_for_today, add_word, update_word, delete_word,
+    get_all_words_admin
 )
 
 app = FastAPI()
@@ -129,6 +130,101 @@ async def submit_practice(
             drawing_filename=filename
         )
     
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/words")
+async def admin_add_word(
+    word: str = Form(...),
+    category: str = Form(...),
+    reference_image: UploadFile = File(None)
+):
+    """Phase 5: Admin endpoint to add new word"""
+    try:
+        reference_filename = None
+        
+        if reference_image and reference_image.filename:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            references_dir = os.path.join(base_dir, "data", "references")
+            os.makedirs(references_dir, exist_ok=True)
+            
+            reference_filename = f"{uuid.uuid4()}_{reference_image.filename}"
+            filepath = os.path.join(references_dir, reference_filename)
+            
+            contents = await reference_image.read()
+            with open(filepath, "wb") as f:
+                f.write(contents)
+        
+        word_id = add_word(word, category, reference_filename)
+        
+        return {"success": True, "word_id": word_id, "message": f"Word '{word}' added successfully"}
+    
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/api/admin/words/{word_id}")
+async def admin_update_word(
+    word_id: int,
+    word: str = Form(None),
+    category: str = Form(None),
+    reference_image: UploadFile = File(None)
+):
+    """Phase 5: Admin endpoint to update word"""
+    try:
+        reference_filename = None
+        
+        if reference_image and reference_image.filename:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            references_dir = os.path.join(base_dir, "data", "references")
+            os.makedirs(references_dir, exist_ok=True)
+            
+            reference_filename = f"{uuid.uuid4()}_{reference_image.filename}"
+            filepath = os.path.join(references_dir, reference_filename)
+            
+            contents = await reference_image.read()
+            with open(filepath, "wb") as f:
+                f.write(contents)
+        
+        success = update_word(word_id, word, category, reference_filename)
+        
+        if success:
+            return {"success": True, "message": "Word updated successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="Word not found")
+    
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/admin/words/{word_id}")
+async def admin_delete_word(word_id: int):
+    """Phase 5: Admin endpoint to delete word"""
+    try:
+        success = delete_word(word_id)
+        
+        if success:
+            return {"success": True, "message": "Word deleted successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="Word not found")
+    
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/admin/words")
+async def admin_get_words():
+    """Phase 5: Admin endpoint to get all words with details"""
+    try:
+        words = get_all_words_admin()
+        return {"words": words}
     except Exception as e:
         import traceback
         traceback.print_exc()

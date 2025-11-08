@@ -166,21 +166,25 @@ After **unsuccessful practice**:
 
 ---
 
-## **PHASE 5: Admin Mode - Word Management (Week 3)**
+## **PHASE 5: Admin Mode - Word Management (Week 3)** ✓ COMPLETE
 **Goal:** Let parent/teacher add and manage words.
 
-**Features:**
-- Admin interface at `/admin.html`
-- Add word form: word name + category
-- Upload reference image for each word
-- List all words with edit/delete buttons
-- Simple auth guard (password or token-based)
-- Prevent child from accessing admin
+**Features Implemented:**
+- ✓ Admin interface at `/admin.html`
+- ✓ Add word form: word name + category
+- ✓ Upload reference image for each word
+- ✓ List all words with delete buttons
+- ✓ Simple auth guard (password-based: admin123)
+- ✓ Prevent child from accessing admin
+- ✓ Database updated with reference_image column
+- ✓ API endpoints: POST/GET/PUT/DELETE /api/admin/words
 
-**Deliverables:**
-- Parent can add new words without touching code
-- Reference images stored and associated with words
-- Word management fully self-serve
+**Deliverables Complete:**
+- ✓ Parent can add new words without touching code
+- ✓ Reference images stored in data/references/
+- ✓ Word management fully self-serve
+- ✓ All words displayed with metadata (successful_days, next_review)
+- ✓ Tests passing for all admin functionality
 
 ---
 

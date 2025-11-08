@@ -22,6 +22,7 @@ def init_db():
     cursor = conn.cursor()
     
     # Words table - Phase 4: Added successful_days, last_practiced, next_review
+    # Phase 5: Added reference_image
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS words (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -30,6 +31,7 @@ def init_db():
             successful_days INTEGER DEFAULT 0,
             last_practiced DATE,
             next_review DATE,
+            reference_image TEXT,
             created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -210,3 +212,94 @@ def get_words_for_today():
     words = cursor.fetchall()
     conn.close()
     return [dict(w) for w in words]
+
+def add_word(word: str, category: str, reference_image: str = None):
+    """
+    Phase 5: Add a new word to the database
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    today = date.today().isoformat()
+    
+    try:
+        cursor.execute("""
+            INSERT INTO words (word, category, successful_days, next_review)
+            VALUES (?, ?, 0, ?)
+        """, (word.lower(), category, today))
+        
+        word_id = cursor.lastrowid
+        
+        if reference_image:
+            cursor.execute("""
+                UPDATE words SET reference_image = ? WHERE id = ?
+            """, (reference_image, word_id))
+        
+        conn.commit()
+        conn.close()
+        return word_id
+    except sqlite3.IntegrityError:
+        conn.close()
+        raise ValueError(f"Word '{word}' already exists")
+
+def update_word(word_id: int, word: str = None, category: str = None, reference_image: str = None):
+    """
+    Phase 5: Update a word's details
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    updates = []
+    params = []
+    
+    if word:
+        updates.append("word = ?")
+        params.append(word.lower())
+    if category:
+        updates.append("category = ?")
+        params.append(category)
+    if reference_image is not None:
+        updates.append("reference_image = ?")
+        params.append(reference_image)
+    
+    if not updates:
+        conn.close()
+        return False
+    
+    params.append(word_id)
+    query = f"UPDATE words SET {', '.join(updates)} WHERE id = ?"
+    
+    cursor.execute(query, params)
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+    return affected > 0
+
+def delete_word(word_id: int):
+    """
+    Phase 5: Delete a word and all its practices
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("DELETE FROM practices WHERE word_id = ?", (word_id,))
+    cursor.execute("DELETE FROM words WHERE id = ?", (word_id,))
+    
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+    return affected > 0
+
+def get_all_words_admin():
+    """
+    Phase 5: Get all words with full details for admin panel
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, word, category, successful_days, last_practiced, next_review, created_date
+        FROM words
+        ORDER BY created_date DESC
+    """)
+    words = cursor.fetchall()
+    conn.close()
+    return [dict(word) for word in words]
