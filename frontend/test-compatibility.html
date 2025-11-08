@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 9: Compatibility Tests</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .test-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .test-section h2 {
+            color: #444;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        .test-result {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .test-result.pass {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .test-result.fail {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .test-result.warning {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 4px solid #ffc107;
+        }
+
+        .status {
+            font-weight: bold;
+            padding: 5px 15px;
+            border-radius: 20px;
+            background: white;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 10px 10px 0;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+        }
+
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .info-table td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .info-table td:first-child {
+            font-weight: bold;
+            width: 200px;
+            color: #555;
+        }
+
+        .performance-metric {
+            display: inline-block;
+            padding: 8px 16px;
+            margin: 5px;
+            background: #e3f2fd;
+            border-radius: 5px;
+            color: #1976d2;
+            font-weight: bold;
+        }
+
+        #testProgress {
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Phase 9: Compatibility & Performance Tests</h1>
+        <p class="subtitle">Automated testing for browser compatibility, device features, and performance</p>
+
+        <div id="testProgress"></div>
+
+        <button class="btn" onclick="runAllTests()">▶ Run All Tests</button>
+        <button class="btn" onclick="testPerformance()">⚡ Test Performance</button>
+        <button class="btn" onclick="testTouchSupport()">👆 Test Touch Features</button>
+        <button class="btn" onclick="captureScreenshot()">📸 Save Screenshot</button>
+        <button class="btn" onclick="downloadReport()">📄 Download Report</button>
+
+        <div class="test-section">
+            <h2>📱 Device & Browser Information</h2>
+            <table class="info-table">
+                <tr>
+                    <td>User Agent:</td>
+                    <td id="userAgent"></td>
+                </tr>
+                <tr>
+                    <td>Platform:</td>
+                    <td id="platform"></td>
+                </tr>
+                <tr>
+                    <td>Screen Size:</td>
+                    <td id="screenSize"></td>
+                </tr>
+                <tr>
+                    <td>Viewport Size:</td>
+                    <td id="viewportSize"></td>
+                </tr>
+                <tr>
+                    <td>Device Pixel Ratio:</td>
+                    <td id="pixelRatio"></td>
+                </tr>
+                <tr>
+                    <td>Orientation:</td>
+                    <td id="orientation"></td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="test-section">
+            <h2>✅ Browser Compatibility Tests</h2>
+            <div id="browserTests"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>👆 Touch & Input Tests</h2>
+            <div id="touchTests"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎨 Canvas & Drawing Tests</h2>
+            <div id="canvasTests"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>⚡ Performance Metrics</h2>
+            <div id="performanceTests"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔊 Audio & Multimedia Tests</h2>
+            <div id="audioTests"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>💾 Storage Tests</h2>
+            <div id="storageTests"></div>
+        </div>
+    </div>
+
+    <script>
+        // Display device info
+        function displayDeviceInfo() {
+            document.getElementById('userAgent').textContent = navigator.userAgent;
+            document.getElementById('platform').textContent = navigator.platform;
+            document.getElementById('screenSize').textContent = `${screen.width} × ${screen.height}`;
+            document.getElementById('viewportSize').textContent = `${window.innerWidth} × ${window.innerHeight}`;
+            document.getElementById('pixelRatio').textContent = window.devicePixelRatio || 1;
+            document.getElementById('orientation').textContent = screen.orientation ? screen.orientation.type : 'Unknown';
+        }
+
+        function createTestResult(name, passed, details = '') {
+            const div = document.createElement('div');
+            div.className = `test-result ${passed ? 'pass' : 'fail'}`;
+            div.innerHTML = `
+                <span>${name} ${details ? `- ${details}` : ''}</span>
+                <span class="status">${passed ? '✓ PASS' : '✗ FAIL'}</span>
+            `;
+            return div;
+        }
+
+        function createWarningResult(name, details) {
+            const div = document.createElement('div');
+            div.className = 'test-result warning';
+            div.innerHTML = `
+                <span>${name} - ${details}</span>
+                <span class="status">⚠ WARNING</span>
+            `;
+            return div;
+        }
+
+        // Browser compatibility tests
+        function testBrowserCompatibility() {
+            const container = document.getElementById('browserTests');
+            container.innerHTML = '';
+
+            // HTML5 Canvas
+            const canvasSupported = !!document.createElement('canvas').getContext;
+            container.appendChild(createTestResult('HTML5 Canvas Support', canvasSupported));
+
+            // localStorage
+            const localStorageSupported = typeof(Storage) !== 'undefined';
+            container.appendChild(createTestResult('LocalStorage Support', localStorageSupported));
+
+            // Fetch API
+            const fetchSupported = typeof(fetch) !== 'undefined';
+            container.appendChild(createTestResult('Fetch API Support', fetchSupported));
+
+            // ES6 Features
+            const es6Supported = typeof(Promise) !== 'undefined';
+            container.appendChild(createTestResult('ES6 Support (Promises)', es6Supported));
+
+            // CSS Flexbox
+            const flexSupported = CSS.supports('display', 'flex');
+            container.appendChild(createTestResult('CSS Flexbox Support', flexSupported));
+
+            // CSS Grid
+            const gridSupported = CSS.supports('display', 'grid');
+            container.appendChild(createTestResult('CSS Grid Support', gridSupported));
+        }
+
+        // Touch and input tests
+        function testTouchSupport() {
+            const container = document.getElementById('touchTests');
+            container.innerHTML = '';
+
+            // Touch Events
+            const touchSupported = 'ontouchstart' in window;
+            container.appendChild(createTestResult('Touch Events Support', touchSupported));
+
+            // Pointer Events
+            const pointerSupported = 'PointerEvent' in window;
+            container.appendChild(createTestResult('Pointer Events Support', pointerSupported));
+
+            // Touch Points
+            const maxTouchPoints = navigator.maxTouchPoints || 0;
+            container.appendChild(createTestResult('Multi-touch Support', maxTouchPoints > 1, 
+                `${maxTouchPoints} touch points`));
+
+            // Vibration API
+            const vibrationSupported = 'vibrate' in navigator;
+            container.appendChild(createTestResult('Haptic Feedback (Vibration API)', vibrationSupported));
+
+            // Orientation
+            const orientationSupported = 'orientation' in screen;
+            container.appendChild(createTestResult('Screen Orientation API', orientationSupported));
+        }
+
+        // Canvas tests
+        function testCanvas() {
+            const container = document.getElementById('canvasTests');
+            container.innerHTML = '';
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (ctx) {
+                // Test drawing capabilities
+                container.appendChild(createTestResult('2D Context Available', true));
+
+                // Test line drawing
+                try {
+                    ctx.beginPath();
+                    ctx.moveTo(0, 0);
+                    ctx.lineTo(10, 10);
+                    ctx.stroke();
+                    container.appendChild(createTestResult('Line Drawing', true));
+                } catch (e) {
+                    container.appendChild(createTestResult('Line Drawing', false, e.message));
+                }
+
+                // Test colors
+                try {
+                    ctx.fillStyle = '#FF0000';
+                    ctx.fillRect(0, 0, 10, 10);
+                    container.appendChild(createTestResult('Color Support', true));
+                } catch (e) {
+                    container.appendChild(createTestResult('Color Support', false, e.message));
+                }
+
+                // Test image export
+                try {
+                    const dataURL = canvas.toDataURL('image/png');
+                    container.appendChild(createTestResult('Image Export (PNG)', true));
+                } catch (e) {
+                    container.appendChild(createTestResult('Image Export (PNG)', false, e.message));
+                }
+            } else {
+                container.appendChild(createTestResult('2D Context Available', false));
+            }
+        }
+
+        // Performance tests
+        function testPerformance() {
+            const container = document.getElementById('performanceTests');
+            container.innerHTML = '';
+
+            // Page load performance
+            if (window.performance && window.performance.timing) {
+                const timing = window.performance.timing;
+                const loadTime = timing.loadEventEnd - timing.navigationStart;
+                const domReady = timing.domContentLoadedEventEnd - timing.navigationStart;
+
+                container.innerHTML += `<div class="performance-metric">Page Load: ${loadTime}ms</div>`;
+                container.innerHTML += `<div class="performance-metric">DOM Ready: ${domReady}ms</div>`;
+
+                container.appendChild(createTestResult('Page Load Performance', loadTime < 3000, 
+                    loadTime < 3000 ? 'Fast' : 'Slow'));
+            }
+
+            // Memory (if available)
+            if (performance.memory) {
+                const memoryMB = (performance.memory.usedJSHeapSize / 1048576).toFixed(2);
+                container.innerHTML += `<div class="performance-metric">Memory Used: ${memoryMB} MB</div>`;
+            }
+
+            // Render performance test
+            const start = performance.now();
+            for (let i = 0; i < 1000; i++) {
+                const div = document.createElement('div');
+                div.textContent = 'test';
+            }
+            const renderTime = performance.now() - start;
+            container.innerHTML += `<div class="performance-metric">DOM Manipulation: ${renderTime.toFixed(2)}ms</div>`;
+
+            container.appendChild(createTestResult('Render Performance', renderTime < 100, 
+                renderTime < 50 ? 'Excellent' : renderTime < 100 ? 'Good' : 'Needs Improvement'));
+        }
+
+        // Audio tests
+        function testAudio() {
+            const container = document.getElementById('audioTests');
+            container.innerHTML = '';
+
+            // Web Audio API
+            const audioContextSupported = 'AudioContext' in window || 'webkitAudioContext' in window;
+            container.appendChild(createTestResult('Web Audio API Support', audioContextSupported));
+
+            // Audio element
+            const audioElementSupported = !!document.createElement('audio').canPlayType;
+            container.appendChild(createTestResult('HTML5 Audio Element', audioElementSupported));
+
+            if (audioContextSupported) {
+                try {
+                    const AudioContext = window.AudioContext || window.webkitAudioContext;
+                    const ctx = new AudioContext();
+                    container.appendChild(createTestResult('Audio Context Creation', true));
+                    ctx.close();
+                } catch (e) {
+                    container.appendChild(createTestResult('Audio Context Creation', false, e.message));
+                }
+            }
+        }
+
+        // Storage tests
+        function testStorage() {
+            const container = document.getElementById('storageTests');
+            container.innerHTML = '';
+
+            // localStorage
+            try {
+                localStorage.setItem('test', 'test');
+                localStorage.removeItem('test');
+                container.appendChild(createTestResult('LocalStorage Read/Write', true));
+            } catch (e) {
+                container.appendChild(createTestResult('LocalStorage Read/Write', false, e.message));
+            }
+
+            // sessionStorage
+            try {
+                sessionStorage.setItem('test', 'test');
+                sessionStorage.removeItem('test');
+                container.appendChild(createTestResult('SessionStorage Read/Write', true));
+            } catch (e) {
+                container.appendChild(createTestResult('SessionStorage Read/Write', false, e.message));
+            }
+
+            // IndexedDB
+            const indexedDBSupported = 'indexedDB' in window;
+            container.appendChild(createTestResult('IndexedDB Support', indexedDBSupported));
+        }
+
+        // Run all tests
+        function runAllTests() {
+            document.getElementById('testProgress').textContent = 'Running tests...';
+            
+            displayDeviceInfo();
+            testBrowserCompatibility();
+            testTouchSupport();
+            testCanvas();
+            testPerformance();
+            testAudio();
+            testStorage();
+
+            document.getElementById('testProgress').textContent = '✓ All tests complete!';
+            setTimeout(() => {
+                document.getElementById('testProgress').textContent = '';
+            }, 3000);
+        }
+
+        // Run on load
+        window.addEventListener('load', () => {
+            displayDeviceInfo();
+            runAllTests();
+        });
+
+        // Update viewport size on resize
+        window.addEventListener('resize', () => {
+            document.getElementById('viewportSize').textContent = `${window.innerWidth} × ${window.innerHeight}`;
+        });
+
+        // Update orientation
+        if (screen.orientation) {
+            screen.orientation.addEventListener('change', () => {
+                document.getElementById('orientation').textContent = screen.orientation.type;
+            });
+        }
+
+        // Screenshot capture using HTML5 Canvas
+        function captureScreenshot() {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const filename = `test-results-${timestamp}.png`;
+
+            // Get the container element
+            const container = document.querySelector('.container');
+
+            // Use html2canvas library if available, otherwise use native screenshot
+            if (typeof html2canvas !== 'undefined') {
+                html2canvas(container, {
+                    backgroundColor: '#f5f5f5',
+                    scale: 2
+                }).then(canvas => {
+                    canvas.toBlob(blob => {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        a.click();
+                        URL.revokeObjectURL(url);
+                        alert(`Screenshot saved as ${filename}`);
+                    });
+                });
+            } else {
+                // Fallback: Manual screenshot using canvas
+                captureManualScreenshot(filename);
+            }
+        }
+
+        // Manual screenshot fallback
+        function captureManualScreenshot(filename) {
+            const container = document.querySelector('.container');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // Set canvas size
+            canvas.width = container.offsetWidth;
+            canvas.height = container.offsetHeight;
+
+            // Draw white background
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Get all test results
+            const testSections = document.querySelectorAll('.test-section');
+            let yOffset = 20;
+
+            ctx.font = 'bold 24px Arial';
+            ctx.fillStyle = '#333';
+            ctx.fillText('Compatibility Test Results', 20, yOffset);
+            yOffset += 40;
+
+            ctx.font = '14px Arial';
+            ctx.fillStyle = '#666';
+            ctx.fillText(new Date().toLocaleString(), 20, yOffset);
+            yOffset += 30;
+
+            // Simple text-based screenshot
+            testSections.forEach(section => {
+                const title = section.querySelector('h2').textContent;
+                ctx.font = 'bold 18px Arial';
+                ctx.fillStyle = '#667eea';
+                ctx.fillText(title, 20, yOffset);
+                yOffset += 30;
+
+                const results = section.querySelectorAll('.test-result');
+                results.forEach(result => {
+                    const text = result.textContent.trim();
+                    const isPassed = result.classList.contains('pass');
+                    ctx.font = '14px Arial';
+                    ctx.fillStyle = isPassed ? '#28a745' : '#dc3545';
+                    ctx.fillText(text, 30, yOffset);
+                    yOffset += 25;
+                });
+
+                yOffset += 20;
+            });
+
+            // Download
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+                alert(`Screenshot saved as ${filename}\n\nNote: Install html2canvas for better quality screenshots.`);
+            });
+        }
+
+        // Download text report
+        function downloadReport() {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const filename = `test-report-${timestamp}.txt`;
+
+            let report = '='.repeat(60) + '\n';
+            report += 'COMPATIBILITY TEST REPORT\n';
+            report += '='.repeat(60) + '\n\n';
+            report += `Date: ${new Date().toLocaleString()}\n\n`;
+
+            // Device Info
+            report += 'DEVICE & BROWSER INFORMATION\n';
+            report += '-'.repeat(60) + '\n';
+            report += `User Agent: ${navigator.userAgent}\n`;
+            report += `Platform: ${navigator.platform}\n`;
+            report += `Screen Size: ${screen.width} × ${screen.height}\n`;
+            report += `Viewport Size: ${window.innerWidth} × ${window.innerHeight}\n`;
+            report += `Device Pixel Ratio: ${window.devicePixelRatio || 1}\n`;
+            report += `Orientation: ${screen.orientation ? screen.orientation.type : 'Unknown'}\n\n`;
+
+            // Test Results
+            const testSections = document.querySelectorAll('.test-section');
+            testSections.forEach(section => {
+                const title = section.querySelector('h2').textContent.toUpperCase();
+                report += title + '\n';
+                report += '-'.repeat(60) + '\n';
+
+                const results = section.querySelectorAll('.test-result');
+                if (results.length > 0) {
+                    results.forEach(result => {
+                        const text = result.querySelector('span:first-child').textContent.trim();
+                        const status = result.classList.contains('pass') ? '✓ PASS' : 
+                                     result.classList.contains('fail') ? '✗ FAIL' : '⚠ WARNING';
+                        report += `${status.padEnd(10)} ${text}\n`;
+                    });
+                } else {
+                    const content = section.textContent.replace(/\s+/g, ' ').trim();
+                    if (content.includes('MB') || content.includes('ms')) {
+                        report += content.substring(content.indexOf('MB') - 50 || content.indexOf('ms') - 50) + '\n';
+                    }
+                }
+                report += '\n';
+            });
+
+            // Summary
+            const passedTests = document.querySelectorAll('.test-result.pass').length;
+            const failedTests = document.querySelectorAll('.test-result.fail').length;
+            const warningTests = document.querySelectorAll('.test-result.warning').length;
+            const totalTests = passedTests + failedTests + warningTests;
+
+            report += '='.repeat(60) + '\n';
+            report += 'TEST SUMMARY\n';
+            report += '='.repeat(60) + '\n';
+            report += `Total Tests: ${totalTests}\n`;
+            report += `Passed: ${passedTests}\n`;
+            report += `Failed: ${failedTests}\n`;
+            report += `Warnings: ${warningTests}\n`;
+            report += `Success Rate: ${((passedTests / totalTests) * 100).toFixed(1)}%\n`;
+            report += '='.repeat(60) + '\n';
+
+            // Download
+            const blob = new Blob([report], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+            alert(`Report saved as ${filename}`);
+        }
+
+        // Auto-save report on test completion
+        let testResults = {};
+        function saveTestResults() {
+            const timestamp = new Date().toISOString();
+            testResults[timestamp] = {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                screenSize: `${screen.width} × ${screen.height}`,
+                viewportSize: `${window.innerWidth} × ${window.innerHeight}`,
+                passed: document.querySelectorAll('.test-result.pass').length,
+                failed: document.querySelectorAll('.test-result.fail').length,
+                warnings: document.querySelectorAll('.test-result.warning').length
+            };
+
+            localStorage.setItem('testResults', JSON.stringify(testResults));
+        }
+
+        // Load previous results
+        const savedResults = localStorage.getItem('testResults');
+        if (savedResults) {
+            testResults = JSON.parse(savedResults);
+        }
+
+        // Save results after running all tests
+        const originalRunAllTests = runAllTests;
+        runAllTests = function() {
+            originalRunAllTests();
+            setTimeout(saveTestResults, 1000);
+        };
+    </script>
+
+    <!-- Optional: Include html2canvas for better screenshots -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</body>
+</html>
