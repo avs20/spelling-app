@@ -9,6 +9,20 @@
     --text-color: #333;
 }
 
+/* Phase 8: Dark Mode */
+body.dark-mode {
+    --light-bg: #1a1a1a;
+    --text-color: #e0e0e0;
+    --border-color: #444;
+    --primary-color: #66BB6A;
+    --secondary-color: #42A5F5;
+}
+
+body.dark-mode {
+    background-color: var(--light-bg);
+    color: var(--text-color);
+}
+
 * {
     margin: 0;
     padding: 0;

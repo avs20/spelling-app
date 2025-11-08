@@ -252,6 +252,11 @@ class SpellingApp {
             this.feedbackMessage.className = isCorrect ? 'feedback-correct' : 'feedback-incorrect';
             this.feedbackMessage.style.display = 'block';
             this.feedbackMessage.style.animation = 'fadeInScale 0.5s ease-out';
+            
+            // Phase 8: Trigger celebration event on correct answer
+            if (isCorrect) {
+                document.dispatchEvent(new Event('correctAnswer'));
+            }
         }
     }
 

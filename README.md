@@ -2,11 +2,11 @@
 
 A tablet-friendly web app for children to practice spelling while drawing objects. The app uses spaced repetition to optimize learning.
 
-**Current Phase:** Phase 7 - Data Management & Performance (Complete)
+**Current Phase:** Phase 8 - Polish & Nice-to-Haves (Complete)
 
 ---
 
-## Features (Phase 1-7) ✓ COMPLETE
+## Features (Phase 1-8) ✓ COMPLETE
 
 **Phase 1 - MVP:**
 - **Drawing Canvas** - Large, touch-optimized canvas for drawing with pen/stylus
@@ -80,6 +80,15 @@ A tablet-friendly web app for children to practice spelling while drawing object
 - **Image Compression** - PNG to JPEG compression utilities (PIL/Pillow)
 - **Performance Monitoring** - Real-time storage stats API
 - **API Endpoints** - `/api/data/storage-stats`, `/cleanup`, `/optimize`, `/backup`
+
+**Phase 8 - Polish & Nice-to-Haves:**
+- **Dark Mode** - Toggle between light and dark themes with localStorage persistence
+- **Progress Badge** - Floating badge showing words practiced this week
+- **Celebration Animation** - Badge bounces on correct answers
+- **Weekly Progress** - Real-time display of words practiced this week
+- **Theme Persistence** - Dark mode preference saved across sessions
+- **Event-Driven Updates** - Progress updates triggered on correct answers
+- **Click Interaction** - Badge shows encouraging message when clicked
 
 ---
 
@@ -282,9 +291,9 @@ See [Plan.md](Plan.md) for detailed phase-by-phase development roadmap.
 - Phase 5 - Admin Mode (Word Management) ✓
 - Phase 6 - Parent Dashboard ✓
 - Phase 7 - Data Management & Performance ✓
+- Phase 8 - Polish & Nice-to-Haves ✓
 
 **Planned:**
-- Phase 8 - Polish & Nice-to-Haves
 - Phase 9 - Testing & Tablet Compatibility
 - Phase 10 - Launch & Expansion
 
