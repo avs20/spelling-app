@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spelling & Drawing App</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>Learn & Draw</h1>
+            <p id="word-display" class="word-title">Loading...</p>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Canvas Section -->
+            <section class="canvas-section">
+                <div class="canvas-toolbar">
+                    <button id="clear-btn" class="toolbar-btn" title="Clear Canvas">
+                        🗑️ Clear
+                    </button>
+                    <div class="toolbar-divider"></div>
+                    <button id="pen-btn" class="toolbar-btn active" title="Pen Mode">
+                        ✏️ Pen
+                    </button>
+                    <button id="eraser-btn" class="toolbar-btn" title="Eraser Mode">
+                        🧹 Eraser
+                    </button>
+                    <div class="toolbar-divider"></div>
+                    <label for="color-picker" title="Pick Color">
+                        🎨
+                        <input type="color" id="color-picker" value="#000000">
+                    </label>
+                </div>
+
+                <canvas id="drawing-canvas"></canvas>
+            </section>
+
+            <!-- Letter Input Section -->
+            <section class="input-section">
+                <p class="instruction">Spell the word:</p>
+                <div id="letters-container" class="letters-container">
+                    <!-- Letters will be inserted here -->
+                </div>
+                <p id="spelled-display" class="spelled-display"></p>
+            </section>
+
+            <!-- Submit Button -->
+            <div class="submit-section">
+                <button id="submit-btn" class="submit-btn">✓ Done</button>
+            </div>
+        </main>
+    </div>
+
+    <script src="api.js"></script>
+    <script src="canvas.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

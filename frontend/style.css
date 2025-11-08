@@ -1,0 +1,258 @@
+/* Spelling & Drawing App Styles */
+
+:root {
+    --primary-color: #4CAF50;
+    --secondary-color: #2196F3;
+    --danger-color: #f44336;
+    --light-bg: #f9f9f9;
+    --border-color: #ddd;
+    --text-color: #333;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--light-bg);
+    color: var(--text-color);
+}
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+header {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+.word-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--secondary-color);
+    margin: 20px 0;
+}
+
+/* Main Content */
+main {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Canvas Section */
+.canvas-section {
+    background: white;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.canvas-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.toolbar-btn,
+.toolbar-btn:focus {
+    background-color: white;
+    border: 2px solid var(--border-color);
+    padding: 10px 15px;
+    font-size: 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 80px;
+}
+
+.toolbar-btn:hover {
+    background-color: var(--light-bg);
+    border-color: var(--secondary-color);
+}
+
+.toolbar-btn.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.toolbar-divider {
+    width: 1px;
+    height: 30px;
+    background-color: var(--border-color);
+}
+
+#color-picker {
+    width: 50px;
+    height: 40px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+#drawing-canvas {
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    background-color: white;
+    cursor: crosshair;
+    touch-action: none;
+}
+
+/* Input Section */
+.input-section {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.instruction {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: var(--text-color);
+}
+
+.letters-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.letter-btn {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 15px 20px;
+    font-size: 1.2rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-width: 50px;
+    font-weight: bold;
+}
+
+.letter-btn:hover {
+    background-color: #1976D2;
+    transform: scale(1.05);
+}
+
+.letter-btn:active {
+    transform: scale(0.95);
+}
+
+.spelled-display {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    text-align: center;
+    min-height: 40px;
+    letter-spacing: 5px;
+}
+
+/* Submit Section */
+.submit-section {
+    text-align: center;
+}
+
+.submit-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 20px 40px;
+    font-size: 1.3rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: bold;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.submit-btn:hover {
+    background-color: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.submit-btn:active {
+    transform: translateY(0);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    header h1 {
+        font-size: 2rem;
+    }
+
+    .word-title {
+        font-size: 1.5rem;
+    }
+
+    .toolbar-btn {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+        min-width: 60px;
+    }
+
+    .letter-btn {
+        padding: 12px 15px;
+        font-size: 1rem;
+        min-width: 45px;
+    }
+
+    .submit-btn {
+        padding: 15px 30px;
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 10px;
+    }
+
+    header h1 {
+        font-size: 1.5rem;
+    }
+
+    .word-title {
+        font-size: 1.2rem;
+    }
+
+    .canvas-section,
+    .input-section {
+        padding: 10px;
+    }
+
+    .toolbar-btn {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+        min-width: 50px;
+    }
+
+    .letter-btn {
+        padding: 10px 12px;
+        font-size: 0.9rem;
+        min-width: 40px;
+    }
+}
