@@ -220,23 +220,32 @@ main {
 }
 
 .spelled-letter {
-    background-color: var(--secondary-color);
-    color: white;
-    padding: 8px 12px;
+    background-color: white;
+    color: var(--secondary-color);
+    padding: 10px 15px;
+    border: 2px solid var(--secondary-color);
     border-radius: 6px;
     font-weight: bold;
     transition: all 0.2s;
     display: inline-block;
     user-select: none;
+    min-width: 40px;
+    text-align: center;
 }
 
 .spelled-letter:hover {
-    background-color: var(--danger-color);
-    transform: scale(1.1);
+    background-color: var(--secondary-color);
+    color: white;
+    border-color: var(--danger-color);
+    cursor: pointer;
+    transform: scale(1.08);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .spelled-letter:active {
     transform: scale(0.95);
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
 }
 
 /* Submit Section */

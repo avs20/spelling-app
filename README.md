@@ -27,6 +27,7 @@ A tablet-friendly web app for children to practice spelling while drawing object
 **Phase 2 - Canvas Polish & UX:**
 - **Undo/Redo** - Up to 10 steps, easy mistake correction
 - **Brush Size Slider** - Adjustable pen width (1-15px) for different drawing styles
+- **Letter Removal** - Click any letter box to remove it (tap to fix mistakes)
 - **Sound Effects** - Ascending tone for correct, descending for incorrect
 - **Haptic Feedback** - Vibration on submit (on supported devices)
 - **Responsive Design** - Optimized for tablets and different screen sizes

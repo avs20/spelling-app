@@ -59,6 +59,7 @@
 - ✓ Eraser mode (toggle pen/eraser) - from Phase 1
 - ✓ Undo/Redo buttons (10-step history)
 - ✓ Brush size slider (1-15px pen width)
+- ✓ Letter removal - click/tap letter box to delete
 - ✓ Touch-friendly buttons with icons
 - ✓ Sound effects on correct/incorrect spelling
 - ✓ Haptic feedback (vibration) on submit
@@ -68,10 +69,11 @@
 
 **Deliverables Complete:**
 - ✓ Smooth canvas experience with undo/redo
-- ✓ Kids can correct mistakes easily (up to 10 steps)
+- ✓ Kids can correct mistakes easily (canvas: 10 steps, spelling: remove any letter)
 - ✓ Visual/audio feedback feels rewarding
 - ✓ Adjustable pen size for different drawing styles
 - ✓ Haptic + audio confirmation on submit
+- ✓ Intuitive letter removal with visual feedback (blue boxes)
 
 ---
 

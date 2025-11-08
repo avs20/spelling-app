@@ -127,11 +127,13 @@ class SpellingApp {
             letterSpan.className = 'spelled-letter';
             letterSpan.textContent = letter;
             letterSpan.style.cursor = 'pointer';
-            letterSpan.addEventListener('click', () => this.removeLetter(index));
-            letterSpan.addEventListener('touchstart', (e) => {
-                e.preventDefault();
+            
+            // Add click handler
+            letterSpan.addEventListener('click', (e) => {
+                e.stopPropagation();
                 this.removeLetter(index);
             });
+            
             this.spelledDisplay.appendChild(letterSpan);
         });
     }
@@ -140,6 +142,7 @@ class SpellingApp {
         /**
          * Remove a letter from the spelled word at given index
          */
+        console.log('Removing letter at index:', index);
         this.spelledLetters.splice(index, 1);
         this.updateSpelledDisplay();
     }
