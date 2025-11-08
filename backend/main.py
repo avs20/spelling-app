@@ -11,7 +11,10 @@ from pydantic import BaseModel
 from datetime import datetime
 import os
 import uuid
-from database import init_db, get_word_for_practice, save_practice, get_all_words, get_word_by_id
+from database import (
+    init_db, get_word_for_practice, save_practice, get_all_words, get_word_by_id,
+    update_word_on_success, get_words_for_today
+)
 
 app = FastAPI()
 
@@ -35,6 +38,7 @@ class WordResponse(BaseModel):
     id: int
     word: str
     category: str
+    successful_days: int
 
 class PracticeRequest(BaseModel):
     word_id: int
@@ -58,15 +62,30 @@ async def get_words():
     words = get_all_words()
     return {"words": words}
 
+@app.get("/api/words-for-today")
+async def get_todays_words():
+    """
+    Phase 4: Get all words ready for practice today
+    Returns words where next_review <= today
+    Useful for dashboard/tracking what needs to be practiced
+    """
+    words = get_words_for_today()
+    return {"words": words}
+
 @app.get("/api/next-word")
 async def next_word():
-    """Get next word to practice"""
+    """
+    Phase 4: Get next word to practice
+    Returns only words where next_review <= today
+    Includes successful_days to determine mode (Learning vs Recall)
+    """
     word = get_word_for_practice()
     if word:
         return {
             "id": word[0],
             "word": word[1],
-            "category": word[2]
+            "category": word[2],
+            "successful_days": word[3]
         }
     return {"error": "No words available"}, 404
 
@@ -97,6 +116,10 @@ async def submit_practice(
             # Convert string 'true'/'false' to boolean
             is_correct_bool = is_correct.lower() == 'true'
             save_practice(word_id, spelled_word, is_correct_bool, filename)
+            
+            # Phase 4: Update word progress if correct
+            if is_correct_bool:
+                update_word_on_success(word_id)
         else:
             raise Exception("Word not found")
         

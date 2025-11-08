@@ -8,11 +8,13 @@ class SpellingApp {
         this.currentWord = null;
         this.currentWordId = null;
         this.spelledLetters = [];
-        this.attemptCount = 0;  // Track attempts per word per session
-        
+        this.attemptCount = 0;  // Track attempts within a session
+        this.successfulDays = 0;  // Phase 4: Days successfully practiced (from backend)
+        this.practicedWordsToday = new Set();  // Phase 4: Track words practiced in this session
+
         // Audio context for sound effects
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        
+
         this.setupElements();
         this.setupEventListeners();
         this.init();
@@ -24,7 +26,7 @@ class SpellingApp {
         this.spelledDisplay = document.getElementById('spelled-display');
         this.modeIndicator = document.getElementById('mode-indicator');
         this.feedbackMessage = document.getElementById('feedback-message');
-        
+
         this.undoBtn = document.getElementById('undo-btn');
         this.redoBtn = document.getElementById('redo-btn');
         this.penBtn = document.getElementById('pen-btn');
@@ -59,7 +61,7 @@ class SpellingApp {
 
     async loadNextWord() {
         const wordData = await API.getNextWord();
-        
+
         if (!wordData) {
             this.wordDisplay.textContent = 'No words available';
             return;
@@ -67,9 +69,11 @@ class SpellingApp {
 
         this.currentWord = wordData.word;
         this.currentWordId = wordData.id;
+        this.successfulDays = wordData.successful_days || 0;  // Phase 4: Get from backend
         this.spelledLetters = [];
         this.attemptCount = 0;  // Reset attempt count for new word
-        
+        this.practicedWordsToday.add(this.currentWordId);  // Phase 4: Mark as practiced today
+
         this.wordDisplay.textContent = this.currentWord;
         this.renderLetters();
         this.updateSpelledDisplay();
@@ -81,17 +85,17 @@ class SpellingApp {
 
     renderLetters() {
         /**
-         * Phase 3: Mode switching
-         * Learning Mode (attempts 1-2): All letters visible (shuffled)
-         * Recall Mode (attempt 3+): Text input field
+         * Phase 4: Mode switching based on successful_days (not session attempts)
+         * Learning Mode (successful_days < 2): All letters visible (shuffled)
+         * Recall Mode (successful_days >= 2): Text input field
          */
         this.lettersContainer.innerHTML = '';
-        
-        if (this.attemptCount < 2) {
+
+        if (this.successfulDays < 2) {
             // Learning Mode: Show letters
             const letters = this.currentWord.toUpperCase().split('');
             const shuffledLetters = this.shuffleArray([...letters]);
-            
+
             shuffledLetters.forEach((letter, index) => {
                 const btn = document.createElement('button');
                 btn.className = 'letter-btn';
@@ -100,7 +104,7 @@ class SpellingApp {
                 this.lettersContainer.appendChild(btn);
             });
         } else {
-            // Recall Mode: Show text input
+            // Recall Mode: Show text input (child types from memory)
             const input = document.createElement('input');
             input.type = 'text';
             input.id = 'recall-input';
@@ -156,19 +160,19 @@ class SpellingApp {
          * Tap a letter to remove it
          */
         this.spelledDisplay.innerHTML = '';
-        
+
         this.spelledLetters.forEach((letter, index) => {
             const letterSpan = document.createElement('span');
             letterSpan.className = 'spelled-letter';
             letterSpan.textContent = letter;
             letterSpan.style.cursor = 'pointer';
-            
+
             // Add click handler
             letterSpan.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.removeLetter(index);
             });
-            
+
             this.spelledDisplay.appendChild(letterSpan);
         });
     }
@@ -224,14 +228,16 @@ class SpellingApp {
 
     updateModeIndicator() {
         /**
-         * Show current mode (Learning or Recall)
+         * Phase 4: Show current mode based on successful_days
+         * Learning Mode: successful_days < 2
+         * Recall Mode: successful_days >= 2 (permanent for this word)
          */
         if (this.modeIndicator) {
-            if (this.attemptCount < 2) {
-                this.modeIndicator.textContent = `Learning Mode (Attempt ${this.attemptCount + 1}/2)`;
+            if (this.successfulDays < 2) {
+                this.modeIndicator.textContent = `Learning Mode (${this.successfulDays}/2 days mastered)`;
                 this.modeIndicator.className = 'mode-learning';
             } else {
-                this.modeIndicator.textContent = `Recall Mode (Attempt ${this.attemptCount + 1})`;
+                this.modeIndicator.textContent = `Recall Mode (Mastered - typing practice)`;
                 this.modeIndicator.className = 'mode-recall';
             }
         }
@@ -267,10 +273,10 @@ class SpellingApp {
             const now = this.audioContext.currentTime;
             const osc = this.audioContext.createOscillator();
             const gain = this.audioContext.createGain();
-            
+
             osc.connect(gain);
             gain.connect(this.audioContext.destination);
-            
+
             if (type === 'correct') {
                 // Success sound: ascending tones
                 osc.frequency.setValueAtTime(400, now);

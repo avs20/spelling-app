@@ -1,10 +1,11 @@
 """
 Database setup and operations
 SQLite database for words and practices
+Phase 4: Spaced repetition tracking
 """
 
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta, date
 import os
 
 DB_PATH = "../data/spelling.db"
@@ -20,12 +21,15 @@ def init_db():
     conn = get_db()
     cursor = conn.cursor()
     
-    # Words table
+    # Words table - Phase 4: Added successful_days, last_practiced, next_review
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS words (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             word TEXT NOT NULL UNIQUE,
             category TEXT NOT NULL,
+            successful_days INTEGER DEFAULT 0,
+            last_practiced DATE,
+            next_review DATE,
             created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -43,15 +47,19 @@ def init_db():
         )
     """)
     
-    # Insert test words if empty
+    # Insert test words if empty - Phase 4: Initialize with next_review = today
     cursor.execute("SELECT COUNT(*) FROM words")
     if cursor.fetchone()[0] == 0:
+        today = date.today().isoformat()
         test_words = [
-            ("bee", "insects"),
-            ("spider", "insects"),
-            ("butterfly", "insects")
+            ("bee", "insects", 0, None, today),
+            ("spider", "insects", 0, None, today),
+            ("butterfly", "insects", 0, None, today)
         ]
-        cursor.executemany("INSERT INTO words (word, category) VALUES (?, ?)", test_words)
+        cursor.executemany(
+            "INSERT INTO words (word, category, successful_days, last_practiced, next_review) VALUES (?, ?, ?, ?, ?)",
+            test_words
+        )
     
     conn.commit()
     conn.close()
@@ -65,11 +73,33 @@ def get_all_words():
     conn.close()
     return [dict(word) for word in words]
 
-def get_word_for_practice():
-    """Get next word to practice (random)"""
+def get_word_for_practice(practiced_today=None):
+    """
+    Get next word to practice - Phase 4
+    
+    Returns words where next_review <= today, excluding already practiced today
+    Shuffles to provide variety
+    
+    Args:
+        practiced_today: set of word IDs already practiced in this session
+    """
+    if practiced_today is None:
+        practiced_today = set()
+    
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, word, category FROM words ORDER BY RANDOM() LIMIT 1")
+    today = date.today().isoformat()
+    
+    # Get words ready for review (where next_review <= today)
+    # Exclude already practiced words in this session
+    cursor.execute("""
+        SELECT id, word, category, successful_days
+        FROM words
+        WHERE next_review <= ?
+        ORDER BY RANDOM()
+        LIMIT 1
+    """, (today,))
+    
     word = cursor.fetchone()
     conn.close()
     return word
@@ -107,3 +137,76 @@ def get_practices_for_word(word_id: int):
     practices = cursor.fetchall()
     conn.close()
     return [dict(p) for p in practices]
+
+def update_word_on_success(word_id: int):
+    """
+    Phase 4: Update word progress after successful practice
+    
+    - Increment successful_days (once per day)
+    - Update last_practiced to today
+    - Calculate next_review based on successful_days
+    
+    Returns: True if successful_days was incremented, False if already practiced today
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    today = date.today().isoformat()
+    
+    # Get current word data
+    cursor.execute("SELECT successful_days, last_practiced FROM words WHERE id = ?", (word_id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        conn.close()
+        return False
+    
+    current_successful_days, last_practiced = row
+    
+    # Only increment if not already practiced today
+    if last_practiced == today:
+        conn.close()
+        return False  # Already practiced today
+    
+    # Increment successful_days
+    new_successful_days = current_successful_days + 1
+    
+    # Calculate next_review based on successful_days
+    if new_successful_days == 1:
+        # After first success → review in 2 days
+        next_review = (date.today() + timedelta(days=2)).isoformat()
+    elif new_successful_days >= 2:
+        # After 2+ successes → review in 3 days
+        next_review = (date.today() + timedelta(days=3)).isoformat()
+    else:
+        next_review = (date.today() + timedelta(days=1)).isoformat()
+    
+    # Update word record
+    cursor.execute("""
+        UPDATE words
+        SET successful_days = ?, last_practiced = ?, next_review = ?
+        WHERE id = ?
+    """, (new_successful_days, today, next_review, word_id))
+    
+    conn.commit()
+    conn.close()
+    return True
+
+def get_words_for_today():
+    """
+    Phase 4: Get all words ready for practice today
+    Returns words where next_review <= today, sorted by successful_days
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    today = date.today().isoformat()
+    
+    cursor.execute("""
+        SELECT id, word, category, successful_days
+        FROM words
+        WHERE next_review <= ?
+        ORDER BY successful_days ASC, word ASC
+    """, (today,))
+    
+    words = cursor.fetchall()
+    conn.close()
+    return [dict(w) for w in words]
