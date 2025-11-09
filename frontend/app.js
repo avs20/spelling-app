@@ -60,9 +60,14 @@ class SpellingApp {
             console.warn('API not available, using test mode');
         }
 
-        // TODO: Option to start session with num_words limit
-        // For now, load next word without session
-        await this.loadNextWord();
+        // Show session selection modal on startup
+        // User can choose how many words to practice
+        if (typeof showSessionModal === 'function') {
+            showSessionModal();
+        } else {
+            // Fallback if function not available
+            await this.loadNextWord();
+        }
     }
 
     async loadNextWord() {
