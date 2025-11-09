@@ -150,14 +150,14 @@ def get_word_by_id(word_id: int):
     conn.close()
     return word
 
-def save_practice(word_id: int, spelled_word: str, is_correct: bool, drawing_filename: str):
+def save_practice(word_id: int, child_id: int, spelled_word: str, is_correct: bool, drawing_filename: str):
     """Save practice record"""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO practices (word_id, spelled_word, is_correct, drawing_filename)
-        VALUES (?, ?, ?, ?)
-    """, (word_id, spelled_word, is_correct, drawing_filename))
+        INSERT INTO practices (word_id, child_id, spelled_word, is_correct, drawing_filename)
+        VALUES (?, ?, ?, ?, ?)
+    """, (word_id, child_id, spelled_word, is_correct, drawing_filename))
     conn.commit()
     conn.close()
 

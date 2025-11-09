@@ -59,12 +59,15 @@ def create_test_drawing(filename):
 
 def test_cleanup_old_drawings():
     """Test cleaning up old drawings"""
+    from database import create_user, create_child
     word_id = add_word("wasp", "insects")
+    user_id = create_user("test@test.com", "password")
+    child_id = create_child(user_id, "Test Child", 8)
     
     for i in range(15):
         filename = f"drawing_{i}.png"
         create_test_drawing(filename)
-        save_practice(word_id, "bee", True, filename)
+        save_practice(word_id, child_id, "bee", True, filename)
     
     deleted = cleanup_old_drawings(keep_per_word=10)
     
@@ -73,18 +76,21 @@ def test_cleanup_old_drawings():
 
 def test_cleanup_multiple_words():
     """Test cleanup with multiple words"""
+    from database import create_user, create_child
     word1_id = add_word("moth", "insects")
     word2_id = add_word("flea", "insects")
+    user_id = create_user("test@test.com", "password")
+    child_id = create_child(user_id, "Test Child", 8)
     
     for i in range(12):
         filename = f"bee_drawing_{i}.png"
         create_test_drawing(filename)
-        save_practice(word1_id, "bee", True, filename)
+        save_practice(word1_id, child_id, "bee", True, filename)
     
     for i in range(8):
         filename = f"ant_drawing_{i}.png"
         create_test_drawing(filename)
-        save_practice(word2_id, "ant", True, filename)
+        save_practice(word2_id, child_id, "ant", True, filename)
     
     deleted = cleanup_old_drawings(keep_per_word=5)
     
@@ -93,12 +99,15 @@ def test_cleanup_multiple_words():
 
 def test_get_storage_stats():
     """Test getting storage statistics"""
+    from database import create_user, create_child
     word_id = add_word("tick", "insects")
+    user_id = create_user("test@test.com", "password")
+    child_id = create_child(user_id, "Test Child", 8)
     
     for i in range(3):
         filename = f"drawing_{i}.png"
         create_test_drawing(filename)
-        save_practice(word_id, "bee", True, filename)
+        save_practice(word_id, child_id, "bee", True, filename)
     
     stats = get_storage_stats()
     
@@ -111,18 +120,24 @@ def test_get_storage_stats():
 
 def test_optimize_database():
     """Test database optimization"""
+    from database import create_user, create_child
     word_id = add_word("gnat", "insects")
+    user_id = create_user("test@test.com", "password")
+    child_id = create_child(user_id, "Test Child", 8)
     
     for i in range(10):
-        save_practice(word_id, "bee", True, f"drawing_{i}.png")
+        save_practice(word_id, child_id, "bee", True, f"drawing_{i}.png")
     
     success = optimize_database()
     assert success is True
 
 def test_create_backup():
     """Test database backup creation"""
+    from database import create_user, create_child
     word_id = add_word("mite", "insects")
-    save_practice(word_id, "bee", True, "drawing.png")
+    user_id = create_user("test@test.com", "password")
+    child_id = create_child(user_id, "Test Child", 8)
+    save_practice(word_id, child_id, "bee", True, "drawing.png")
     
     filename = create_backup(BACKUPS_DIR)
     

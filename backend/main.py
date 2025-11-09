@@ -408,7 +408,13 @@ async def submit_practice(
         if word_data:
             # Convert string 'true'/'false' to boolean
             is_correct_bool = is_correct.lower() == 'true'
-            save_practice(word_id, spelled_word, is_correct_bool, filename)
+            
+            # Get child_id from session
+            child_id = current_session.child_id if current_session else None
+            if not child_id:
+                raise Exception("No child selected for practice session")
+            
+            save_practice(word_id, child_id, spelled_word, is_correct_bool, filename)
             
             # Update session queue if active
             if current_session and current_session.session_started:

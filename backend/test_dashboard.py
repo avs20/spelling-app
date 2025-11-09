@@ -43,11 +43,14 @@ def test_get_practice_stats_empty():
 
 def test_get_practice_stats_with_data():
     """Test stats with practice data"""
+    from database import create_user, create_child
     word_id = add_word("wasp", "insects")
+    user_id = create_user("test@test.com", "password")
+    child_id = create_child(user_id, "Test Child", 8)
     
-    save_practice(word_id, "bee", True, "drawing1.png")
-    save_practice(word_id, "bea", False, "drawing2.png")
-    save_practice(word_id, "bee", True, "drawing3.png")
+    save_practice(word_id, child_id, "bee", True, "drawing1.png")
+    save_practice(word_id, child_id, "bea", False, "drawing2.png")
+    save_practice(word_id, child_id, "bee", True, "drawing3.png")
     
     stats = get_practice_stats()
     
@@ -58,14 +61,17 @@ def test_get_practice_stats_with_data():
 
 def test_get_word_accuracy():
     """Test word accuracy calculation"""
+    from database import create_user, create_child
     word1_id = add_word("wasp", "insects")
     word2_id = add_word("moth", "insects")
+    user_id = create_user("test@test.com", "password")
+    child_id = create_child(user_id, "Test Child", 8)
     
-    save_practice(word1_id, "bee", True, "d1.png")
-    save_practice(word1_id, "bee", True, "d2.png")
-    save_practice(word1_id, "bea", False, "d3.png")
+    save_practice(word1_id, child_id, "bee", True, "d1.png")
+    save_practice(word1_id, child_id, "bee", True, "d2.png")
+    save_practice(word1_id, child_id, "bea", False, "d3.png")
     
-    save_practice(word2_id, "ant", True, "d4.png")
+    save_practice(word2_id, child_id, "ant", True, "d4.png")
     
     words = get_word_accuracy()
     
@@ -83,15 +89,18 @@ def test_get_word_accuracy():
 
 def test_get_word_accuracy_sorted():
     """Test that word accuracy is sorted by worst performing"""
+    from database import create_user, create_child
     word1_id = add_word("flea", "insects")
     word2_id = add_word("tick", "insects")
+    user_id = create_user("test@test.com", "password")
+    child_id = create_child(user_id, "Test Child", 8)
     
-    save_practice(word1_id, "flea", True, "d1.png")
-    save_practice(word1_id, "flea", True, "d2.png")
+    save_practice(word1_id, child_id, "flea", True, "d1.png")
+    save_practice(word1_id, child_id, "flea", True, "d2.png")
     
-    save_practice(word2_id, "tick", True, "d3.png")
-    save_practice(word2_id, "teck", False, "d4.png")
-    save_practice(word2_id, "tock", False, "d5.png")
+    save_practice(word2_id, child_id, "tick", True, "d3.png")
+    save_practice(word2_id, child_id, "teck", False, "d4.png")
+    save_practice(word2_id, child_id, "tock", False, "d5.png")
     
     words = get_word_accuracy()
     
@@ -100,11 +109,14 @@ def test_get_word_accuracy_sorted():
 
 def test_get_practice_trend():
     """Test practice trend data"""
+    from database import create_user, create_child
     word_id = add_word("gnat", "insects")
+    user_id = create_user("test@test.com", "password")
+    child_id = create_child(user_id, "Test Child", 8)
     
-    save_practice(word_id, "bee", True, "d1.png")
-    save_practice(word_id, "bea", False, "d2.png")
-    save_practice(word_id, "bee", True, "d3.png")
+    save_practice(word_id, child_id, "bee", True, "d1.png")
+    save_practice(word_id, child_id, "bea", False, "d2.png")
+    save_practice(word_id, child_id, "bee", True, "d3.png")
     
     trend = get_practice_trend(7)
     
@@ -117,12 +129,15 @@ def test_get_practice_trend():
 
 def test_get_recent_drawings():
     """Test getting recent drawings"""
+    from database import create_user, create_child
     word1_id = add_word("midge", "insects")
     word2_id = add_word("louse", "insects")
+    user_id = create_user("test@test.com", "password")
+    child_id = create_child(user_id, "Test Child", 8)
     
-    save_practice(word1_id, "midge", True, "drawing1.png")
-    save_practice(word2_id, "louse", False, "drawing2.png")
-    save_practice(word1_id, "midge", True, "drawing3.png")
+    save_practice(word1_id, child_id, "midge", True, "drawing1.png")
+    save_practice(word2_id, child_id, "louse", False, "drawing2.png")
+    save_practice(word1_id, child_id, "midge", True, "drawing3.png")
     
     drawings = get_recent_drawings(10)
     
@@ -137,10 +152,13 @@ def test_get_recent_drawings():
 
 def test_get_recent_drawings_limit():
     """Test drawings limit"""
+    from database import create_user, create_child
     word_id = add_word("roach", "insects")
+    user_id = create_user("test@test.com", "password")
+    child_id = create_child(user_id, "Test Child", 8)
     
     for i in range(15):
-        save_practice(word_id, "bee", True, f"drawing{i}.png")
+        save_practice(word_id, child_id, "bee", True, f"drawing{i}.png")
     
     drawings = get_recent_drawings(10)
     
