@@ -218,7 +218,7 @@ async def create_child_profile(
 async def list_children(user_id: int = Depends(get_current_user)):
     """Get all children for logged-in user"""
     children = get_user_children(user_id)
-    return children
+    return JSONResponse(content=children)
 
 @app.put("/api/children/{child_id}", response_model=ChildResponse)
 async def update_child_profile(
@@ -271,21 +271,26 @@ async def get_todays_words():
     return {"words": words}
 
 @app.post("/api/session/start")
-async def start_session(num_words: int = None, user_id: int = Depends(get_current_user)):
+async def start_session(
+    num_words: int = None,
+    child_id: int = None,
+    user_id: int = Depends(get_current_user)
+):
     """
     Phase 12: Start a new practice session with optional word limit
     Requires authentication and child_id in localStorage on frontend
     
     Args:
         num_words: Limit session to N words (None = all available)
+        child_id: Child ID for whom to start session
     
     Returns:
         Session info and first word
     """
     global current_session
     
-    # Create new session
-    current_session = WordSession(num_words=num_words)
+    # Create new session with child_id
+    current_session = WordSession(num_words=num_words, child_id=child_id)
     
     # Get first word
     word_id = current_session.get_next_word_id()

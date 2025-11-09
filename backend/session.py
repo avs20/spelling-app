@@ -8,19 +8,21 @@ Implements Anki-like queue system:
 
 import random
 from datetime import date
-from database import get_words_for_today
+from database import get_words_for_today, get_words_for_child
 
 class WordSession:
     """Manages word queue for a single practice session"""
     
-    def __init__(self, num_words=None):
+    def __init__(self, num_words=None, child_id=None):
         """
         Initialize session with words from today
         
         Args:
             num_words: Limit words to practice (None = all available)
+            child_id: Child ID for filtering words (None = use all words)
         """
         self.num_words = num_words
+        self.child_id = child_id
         self.available_words = []  # Words yet to be mastered today
         self.last_word_id = None  # Track last shown word to prevent consecutive duplicates
         self.mastered_words = set()  # Words completed in this session
@@ -30,7 +32,11 @@ class WordSession:
     
     def _load_words(self):
         """Load available words for today from database"""
-        all_words = get_words_for_today()
+        # Use child-specific words if child_id is provided
+        if self.child_id:
+            all_words = get_words_for_child(self.child_id)
+        else:
+            all_words = get_words_for_today()
         
         # Limit to num_words if specified
         if self.num_words:

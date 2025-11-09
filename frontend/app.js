@@ -60,21 +60,21 @@ class SpellingApp {
             console.warn('API not available, using test mode');
         }
 
-        // Show session selection modal on startup
-        // User can choose how many words to practice
-        if (typeof showSessionModal === 'function') {
-            showSessionModal();
-        } else {
-            // Fallback if function not available
-            await this.loadNextWord();
-        }
+        // Try to load next word first (will work if session is active)
+        // If no session, it will show the session modal
+        await this.loadNextWord();
     }
 
     async loadNextWord() {
         const wordData = await API.getNextWord();
 
         if (!wordData) {
-            this.showCompletionScreen();
+            // No active session - show modal to start one
+            if (typeof showSessionModal === 'function') {
+                showSessionModal();
+            } else {
+                this.showCompletionScreen();
+            }
             return;
         }
 

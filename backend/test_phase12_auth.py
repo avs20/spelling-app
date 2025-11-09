@@ -77,6 +77,18 @@ async def perform_login(page, email, password):
     await page.goto(f"{BASE_URL}/select-child.html")
 
 
+async def select_child_by_name(page, child_name):
+    """Helper to select a child and proceed to main app"""
+    # Click the child button that contains the child's name
+    child_btn = page.locator(f'.child-button:has-text("{child_name}")').first
+    await child_btn.click()
+    await page.wait_for_timeout(300)
+    
+    # Click "Start Practicing"
+    await page.click('button:has-text("Start Practicing")')
+    await page.wait_for_url("**/index.html", timeout=5000)
+
+
 # ============================================================================
 # TEST SUITE 1: USER REGISTRATION & LOGIN
 # ============================================================================
@@ -315,14 +327,11 @@ async def test_select_child_and_access_app():
             await page.wait_for_timeout(1000)
             
             # Select child
-            await page.click('button:has-text("Select Lily")')
-            
-            # Should go to main app
-            await page.wait_for_url("**/index.html", timeout=5000)
+            await select_child_by_name(page, "Lily")
             assert page.url.endswith("index.html"), "Should be on main app"
             
             # Child ID should be in localStorage
-            child_id = await page.evaluate('localStorage.getItem("selected_child_id")')
+            child_id = await page.evaluate('localStorage.getItem("selectedChildId")')
             assert child_id is not None, "Child ID should be in localStorage"
             
             await page.screenshot(path=f"{SCREENSHOTS_DIR}/{TIMESTAMP}_05_select_child.png")
@@ -409,9 +418,10 @@ async def test_delete_child():
             
             await page.wait_for_timeout(1000)
             
-            # Child should be gone
-            text = await page.text_content("text=ToDelete")
-            assert text is None, "Child should be deleted"
+            # Child should be gone - check that the child card/button is not visible
+            # Use a more specific selector that won't match success messages
+            child_cards = page.locator('.child-card:has-text("ToDelete"), .child-item:has-text("ToDelete")')
+            assert await child_cards.count() == 0, "Child should be deleted"
             
         finally:
             await browser.close()
@@ -469,8 +479,8 @@ async def test_data_isolation_between_users():
         await page2.wait_for_url("**/select-child.html", timeout=5000)
         
         # User 2 should NOT see User 1's child
-        user1_child_text = await page2.text_content("text=User1Child")
-        assert user1_child_text is None, "User 2 should not see User 1's child"
+        user1_child_buttons = page2.locator('.child-button:has-text("User1Child")')
+        assert await user1_child_buttons.count() == 0, "User 2 should not see User 1's child"
         
         # User 2 creates their own child
         await page2.fill('input#childName', "User2Child")
@@ -479,14 +489,14 @@ async def test_data_isolation_between_users():
         
         await page2.wait_for_timeout(1000)
         
-        user2_child_text = await page2.text_content("text=User2Child")
-        assert user2_child_text is not None, "User 2 should see their own child"
+        user2_child_buttons = page2.locator('.child-button:has-text("User2Child")')
+        assert await user2_child_buttons.count() > 0, "User 2 should see their own child"
         
         # User 1 should still not see User 2's child
         await page1.wait_for_timeout(1000)
         await page1.reload()
-        user2_child_text_in_page1 = await page1.text_content("text=User2Child")
-        assert user2_child_text_in_page1 is None, "User 1 should not see User 2's child"
+        user2_in_page1 = page1.locator('.child-button:has-text("User2Child")')
+        assert await user2_in_page1.count() == 0, "User 1 should not see User 2's child"
         
         await page1.screenshot(path=f"{SCREENSHOTS_DIR}/{TIMESTAMP}_07_data_isolation_user1.png")
         await page2.screenshot(path=f"{SCREENSHOTS_DIR}/{TIMESTAMP}_07_data_isolation_user2.png")
@@ -618,22 +628,15 @@ async def test_logout_clears_token():
             token_before = await page.evaluate('localStorage.getItem("authToken")')
             assert token_before is not None
             
-            # Click logout (button location depends on implementation)
-            logout_btn = page.locator('button:has-text("Logout")').first
-            if await logout_btn.is_visible():
-                await logout_btn.click()
-            else:
-                # Try profile page logout
-                await page.goto(f"{BASE_URL}/user-profile.html")
-                await page.click('button:has-text("Logout")')
+            # Go to user profile page and logout
+            await page.goto(f"{BASE_URL}/user-profile.html")
+            await page.wait_for_timeout(500)
+            await page.click('button:has-text("Logout")')
             
-            # Token should be cleared
-            await page.wait_for_timeout(1000)
+            # Token should be cleared and should redirect to login
+            await page.wait_for_url("**/login.html", timeout=5000)
             token_after = await page.evaluate('localStorage.getItem("authToken")')
             assert token_after is None, "Token should be cleared on logout"
-            
-            # Should redirect to login
-            await page.wait_for_url("**/login.html", timeout=5000)
             
         finally:
             await browser.close()
@@ -737,10 +740,9 @@ async def test_complete_signup_to_app_flow():
             await page.click('button:has-text("Add Child")')
             
             await page.wait_for_timeout(1000)
-            await page.click('button:has-text("Select TestChild")')
+            await select_child_by_name(page, "TestChild")
             
-            # Step 6: On main app
-            await page.wait_for_url("**/index.html", timeout=5000)
+            # Step 6: On main app (already on index.html from select_child_by_name)
             
             # Verify canvas is loaded
             canvas = await page.locator("canvas").first.is_visible()
@@ -785,19 +787,17 @@ async def test_switch_between_children():
             await page.wait_for_timeout(500)
             
             # Select Child A
-            await page.click('button:has-text("Select Child_A")')
-            await page.wait_for_url("**/index.html", timeout=5000)
+            await select_child_by_name(page, "Child_A")
             
-            child_id_a = await page.evaluate('localStorage.getItem("selected_child_id")')
+            child_id_a = await page.evaluate('localStorage.getItem("selectedChildId")')
             
             # Go back to child selector
             await page.goto(f"{BASE_URL}/select-child.html")
             
             # Select Child B
-            await page.click('button:has-text("Select Child_B")')
-            await page.wait_for_url("**/index.html", timeout=5000)
+            await select_child_by_name(page, "Child_B")
             
-            child_id_b = await page.evaluate('localStorage.getItem("selected_child_id")')
+            child_id_b = await page.evaluate('localStorage.getItem("selectedChildId")')
             
             # IDs should be different
             assert child_id_a != child_id_b, "Children should have different IDs"
@@ -889,12 +889,22 @@ async def test_child_age_validation():
             await page.wait_for_url("**/login.html")
             await perform_login(page, email, password)
             
-            # Try invalid age
+            # Try invalid age (use JavaScript since playwright can't fill invalid text in number input)
             await page.fill('input#childName', "Child")
-            await page.fill('input#childAge', "invalid")
+            await page.evaluate('document.querySelector("input#childAge").value = ""')
             await page.click('button:has-text("Add Child")')
             
-            # Should show error or reject
+            # Should show error or reject empty age
+            await page.wait_for_timeout(500)
+            
+            # Try age out of range (too young)
+            await page.fill('input#childAge', "2")
+            await page.click('button:has-text("Add Child")')
+            await page.wait_for_timeout(500)
+            
+            # Try age out of range (too old)
+            await page.fill('input#childAge', "15")
+            await page.click('button:has-text("Add Child")')
             await page.wait_for_timeout(500)
             
         finally:

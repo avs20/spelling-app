@@ -261,7 +261,7 @@
 
         <div class="card">
             <div class="profile-link">
-                <a href="/user-profile">👤 Profile & Settings</a>
+                <a href="user-profile.html">👤 Profile & Settings</a>
             </div>
 
             <div class="error" id="errorMsg"></div>
@@ -315,7 +315,7 @@
             try {
                 const token = localStorage.getItem('authToken');
                 if (!token) {
-                    window.location.href = '/login';
+                    window.location.href = '/login.html';
                     return;
                 }
 
@@ -331,7 +331,7 @@
 
                 if (response.status === 401) {
                     localStorage.removeItem('authToken');
-                    window.location.href = '/login';
+                    window.location.href = '/login.html';
                     return;
                 }
 
@@ -391,7 +391,7 @@
 
             try {
                 localStorage.setItem('selectedChildId', selectedChildId);
-                window.location.href = '/';
+                window.location.href = '/index.html';
             } catch (error) {
                 showError('Error: ' + error.message);
             }
@@ -414,7 +414,7 @@
             try {
                 const token = localStorage.getItem('authToken');
                 if (!token) {
-                    window.location.href = '/login';
+                    window.location.href = '/login.html';
                     return;
                 }
 

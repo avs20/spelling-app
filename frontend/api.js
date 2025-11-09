@@ -34,7 +34,7 @@ function getAuthHeaders() {
 function handleUnauthorized() {
     clearAuthToken();
     localStorage.removeItem('selectedChildId');
-    window.location.href = '/login';
+    window.location.href = '/login.html';
 }
 
 class API {
@@ -240,9 +240,15 @@ class API {
 
     static async startSession(numWords = null) {
         try {
-            const url = numWords 
-                ? `${API_BASE}/session/start?num_words=${numWords}`
+            const childId = localStorage.getItem('selectedChildId');
+            const params = new URLSearchParams();
+            if (numWords) params.append('num_words', numWords);
+            if (childId) params.append('child_id', childId);
+            
+            const url = params.toString() 
+                ? `${API_BASE}/session/start?${params.toString()}`
                 : `${API_BASE}/session/start`;
+            
             const response = await fetch(url, {
                 method: 'POST',
                 headers: getAuthHeaders()

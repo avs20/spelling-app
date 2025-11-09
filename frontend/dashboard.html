@@ -306,13 +306,13 @@
         window.addEventListener('DOMContentLoaded', async () => {
             const token = getAuthToken();
             if (!token) {
-                window.location.href = '/login';
+                window.location.href = '/login.html';
                 return;
             }
             
             const user = await API.getCurrentUser();
             if (!user) {
-                window.location.href = '/login';
+                window.location.href = '/login.html';
                 return;
             }
 
@@ -323,7 +323,7 @@
                 links.style.display = 'flex';
                 links.style.gap = '15px';
                 links.innerHTML = `
-                    <a href="/profile" style="color: #667eea; text-decoration: none; font-weight: bold;">Profile</a>
+                    <a href="user-profile.html" style="color: #667eea; text-decoration: none; font-weight: bold;">Profile</a>
                     <button onclick="logout()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">Logout</button>
                 `;
                 headerActions.appendChild(links);
@@ -335,7 +335,7 @@
         function logout() {
             clearAuthToken();
             localStorage.removeItem('selectedChildId');
-            window.location.href = '/login';
+            window.location.href = '/login.html';
         }
 
         async function loadDashboard() {
