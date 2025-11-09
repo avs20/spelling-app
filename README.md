@@ -2,7 +2,7 @@
 
 A tablet-friendly web app for children to practice spelling while drawing objects. The app uses spaced repetition to optimize learning.
 
-**Current Phase:** Phase 11 - Bug Fix (Complete)
+**Current Phase:** Phase 12 - Smart Word Cycling (In Progress)
 
 **🎉 LIVE APP:** https://spelling-drawing-app.fly.dev/
 
@@ -121,6 +121,18 @@ A tablet-friendly web app for children to practice spelling while drawing object
 - **Production Deployed** - Fix deployed and verified on Fly.io
 - **App Rendering** - App now displays with proper styling and functionality
 
+**Phase 12 - Smart Word Cycling:**
+- **Anki-Style Queue System** - Words cycle with intelligent sequencing (no consecutive duplicates)
+- **Session-Based Practice** - Users choose to practice 5, 10, or all available words
+- **No Duplicate Pairs** - Same word never appears twice in a row (unless only word left)
+- **Word Rotation** - After correct answer, word moves to end of queue to cycle with others
+- **Session Progress Tracking** - Display X/Y words mastered during current session
+- **Session Modal UI** - Beautiful selector to choose session word limit at startup
+- **Progress Indicator** - Real-time display of session progress and option to end early
+- **Session Completion** - Show button to start new session when current session ends
+- **Backward Compatible** - Works with existing spaced repetition without conflicts
+- **Integration Tested** - Comprehensive tests verify queue logic across 50+ attempts
+
 ---
 
 ## Project Structure
@@ -130,10 +142,13 @@ A tablet-friendly web app for children to practice spelling while drawing object
 ├── backend/
 │   ├── main.py              # FastAPI app with routes
 │   ├── database.py          # SQLite setup and queries
+│   ├── session.py           # Phase 12 word cycling queue system
 │   ├── data_management.py   # Phase 7 data management utilities
 │   ├── test_admin.py        # Phase 5 admin tests
 │   ├── test_dashboard.py    # Phase 6 dashboard tests
 │   ├── test_data_management.py # Phase 7 data management tests
+│   ├── test_session.py      # Phase 12 session queue tests
+│   ├── test_session_integration.py # Phase 12 integration tests
 │   ├── visual_tests.py      # Phase 9 visual regression tests
 │   └── requirements.txt     # Python dependencies
 ├── frontend/

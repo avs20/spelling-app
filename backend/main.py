@@ -144,9 +144,8 @@ async def start_session(num_words: int = None):
         raise HTTPException(status_code=404, detail="Word not found")
     
     # Get word record for successful_days
-    conn = get_db() if 'get_db' in globals() else None
-    from database import get_db as db_get
-    conn = db_get()
+    from database import get_db
+    conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT successful_days FROM words WHERE id = ?", (word_id,))
     word_data = cursor.fetchone()
