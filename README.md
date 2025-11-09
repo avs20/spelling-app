@@ -2,13 +2,13 @@
 
 A tablet-friendly web app for children to practice spelling while drawing objects. The app uses spaced repetition to optimize learning.
 
-**Current Phase:** Phase 10 - Launch & Expansion (Complete)
+**Current Phase:** Phase 11 - Bug Fix (Complete)
 
 **🎉 LIVE APP:** https://spelling-drawing-app.fly.dev/
 
 ---
 
-## Features (Phase 1-10) ✓ ALL PHASES COMPLETE!
+## Features (Phase 1-11) ✓ ALL PHASES COMPLETE!
 
 **Phase 1 - MVP:**
 - **Drawing Canvas** - Large, touch-optimized canvas for drawing with pen/stylus
@@ -112,6 +112,14 @@ A tablet-friendly web app for children to practice spelling while drawing object
 - **Persistent Storage** - 1GB volume mounted for data persistence
 - **HTTPS & CDN** - Automatic SSL and global edge deployment
 - **Documentation** - Complete guides: DEPLOYMENT.md, DEPLOY-FAST.md, PRICING.md
+
+**Phase 11 - Bug Fix - Static File Serving:**
+- **Fixed 404 Errors** - CSS, JavaScript, and favicon files now load correctly
+- **Updated Routes** - Backend mounts static files at `/static/`
+- **HTML References** - Updated all HTML files to use correct asset paths
+- **Testing Verified** - All 25 backend unit tests passing
+- **Production Deployed** - Fix deployed and verified on Fly.io
+- **App Rendering** - App now displays with proper styling and functionality
 
 ---
 
@@ -365,6 +373,7 @@ See [Plan.md](Plan.md) for detailed phase-by-phase development roadmap.
 - Phase 8 - Polish & Nice-to-Haves ✓
 - Phase 9 - Testing & Tablet Compatibility ✓
 - Phase 10 - Launch & Deployment ✓
+- Phase 11 - Bug Fix - Static File Serving ✓
 
 **🚀 Production Status:**
 - **Live URL:** https://spelling-drawing-app.fly.dev/

@@ -303,3 +303,30 @@ After **unsuccessful practice**:
 - ✓ Deployment docs for future updates
 - ✓ Multi-platform configs ready (Fly.io, Railway, Vercel, Docker)
 - ✓ Foundation for future expansion complete
+
+---
+
+## **PHASE 11: Bug Fix - Static File Serving** ✓ COMPLETE
+**Goal:** Fix 404 errors on CSS and JavaScript file loading.
+
+**Issue Identified:**
+- Backend was mounting static files at `/static/` (line 49 in main.py)
+- HTML files were requesting files from root (`/style.css`, `/app.js`, etc.)
+- Result: 404 errors in logs for style.css, api.js, app.js, canvas.js, favicon.ico
+- App appeared unstyled/broken in production
+
+**Fix Implemented:**
+- ✓ Updated backend to mount static files at `/static/` path
+- ✓ Updated frontend HTML files to reference static assets correctly:
+  - `index.html`: Changed to `/static/style.css`, `/static/api.js`, `/static/canvas.js`, `/static/app.js`
+  - Verified admin.html and dashboard.html don't reference external stylesheets
+- ✓ Tested all 25 backend unit tests - all passing
+- ✓ Deployed to production on Fly.io
+- ✓ Verified static assets now load correctly
+
+**Deliverables Complete:**
+- ✓ All CSS and JavaScript files loading without 404 errors
+- ✓ App displays correctly with proper styling
+- ✓ No browser console errors from missing assets
+- ✓ All tests passing
+- ✓ Production deployment working smoothly
