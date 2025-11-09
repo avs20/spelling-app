@@ -286,14 +286,19 @@ async def start_session(
     """
     global current_session
     
-    # Create new session with child_id
-    current_session = WordSession(num_words=num_words, child_id=child_id)
-    
-    # Get first word
-    word_id = current_session.get_next_word_id()
-    
-    if not word_id:
-        raise HTTPException(status_code=404, detail="No words available for today")
+    try:
+        # Create new session with child_id
+        current_session = WordSession(num_words=num_words, child_id=child_id)
+        
+        # Get first word
+        word_id = current_session.get_next_word_id()
+        
+        if not word_id:
+            raise HTTPException(status_code=404, detail="No words available for today")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error starting session: {str(e)}")
     
     word = get_word_by_id(word_id)
     if not word:
