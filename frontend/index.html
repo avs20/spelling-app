@@ -53,20 +53,139 @@
             background: #fff;
             color: #333;
         }
+
+        /* Session Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .session-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .session-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        .session-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .session-btn.cancel {
+            background: #999;
+        }
+
+        /* Session Indicator */
+        .session-indicator {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 999;
+        }
+
+        .session-end-btn {
+            background: white;
+            color: #4facfe;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .new-session-btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .new-session-btn:hover {
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
     <div class="container">
+    <!-- Session Start Modal -->
+    <div id="session-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Start Practice Session</h2>
+            <p>How many words would you like to practice?</p>
+            <div class="session-options">
+                <button class="session-btn" onclick="startSessionWithLimit(5)">5 Words</button>
+                <button class="session-btn" onclick="startSessionWithLimit(10)">10 Words</button>
+                <button class="session-btn" onclick="startSessionWithLimit(null)">All Words</button>
+                <button class="session-btn cancel" onclick="closeSessionModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Header -->
     <header>
     <h1>Learn & Draw</h1>
     <p id="word-display" class="word-title">Loading...</p>
     </header>
 
+    <!-- Session Progress Indicator -->
+    <div id="session-indicator" class="session-indicator" style="display: none;">
+        <span id="session-progress">Session: 0/0 words</span>
+        <button class="session-end-btn" onclick="endSession()">End Session</button>
+    </div>
+
     <!-- Completion Banner -->
     <div id="completion-banner" class="completion-banner" style="display: none;">
              <h2>🎉 All Words Complete!</h2>
              <p>You've finished all available words. Great job!</p>
+             <button class="new-session-btn" onclick="showSessionModal()">Start New Session</button>
          </div>
 
          <!-- Main Content -->
@@ -187,6 +306,42 @@
             setTimeout(() => badge.classList.remove('celebrate'), 600);
             updateProgressBadge();
         });
+
+        // Session Management
+        function showSessionModal() {
+            document.getElementById('session-modal').style.display = 'flex';
+        }
+
+        function closeSessionModal() {
+            document.getElementById('session-modal').style.display = 'none';
+        }
+
+        async function startSessionWithLimit(numWords) {
+            closeSessionModal();
+            const wordData = await API.startSession(numWords);
+            if (wordData) {
+                console.log('Session started:', wordData);
+                // App will be reinitialized after API call
+                location.reload();
+            } else {
+                alert('Failed to start session');
+            }
+        }
+
+        function endSession() {
+            if (confirm('End this session?')) {
+                location.reload();
+            }
+        }
+
+        function updateSessionIndicator(stats) {
+            if (stats) {
+                const indicator = document.getElementById('session-indicator');
+                const progress = document.getElementById('session-progress');
+                progress.textContent = `Session: ${stats.mastered}/${stats.total_words} words`;
+                indicator.style.display = 'flex';
+            }
+        }
     </script>
 </body>
 </html>

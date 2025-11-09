@@ -284,9 +284,10 @@ class SpellingApp {
          * Displays: Mastered X/N words
          */
         if (this.sessionActive && this.sessionStats) {
-            const progress = `Session: ${this.sessionStats.mastered}/${this.sessionStats.total_words} words mastered`;
-            console.log(progress);
-            // TODO: Display session progress in UI
+            // Call global function to update UI
+            if (typeof updateSessionIndicator === 'function') {
+                updateSessionIndicator(this.sessionStats);
+            }
         }
     }
 
