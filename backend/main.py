@@ -282,7 +282,7 @@ async def start_session(
         child_id: Child ID for whom to start session
     
     Returns:
-        Session info and first word
+        Session info and first word, or completion status if all words done
     """
     global current_session
     
@@ -294,7 +294,14 @@ async def start_session(
         word_id = current_session.get_next_word_id()
         
         if not word_id:
-            raise HTTPException(status_code=404, detail="No words available for today")
+            # All words completed for today - return completion status instead of error
+            return {
+                "completed": True,
+                "message": "All words completed for today!"
+            }
+    except HTTPException:
+        # Re-raise HTTP exceptions without modification
+        raise
     except Exception as e:
         import traceback
         traceback.print_exc()

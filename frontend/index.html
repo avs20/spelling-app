@@ -345,11 +345,21 @@
 
         async function startSessionWithLimit(numWords) {
             closeSessionModal();
-            const wordData = await API.startSession(numWords);
-            if (wordData) {
-                console.log('Session started:', wordData);
-                // App will be reinitialized after API call
-                location.reload();
+            const response = await API.startSession(numWords);
+            if (response) {
+                if (response.completed) {
+                    // All words completed - show completion screen
+                    const app = window.app;
+                    if (app && typeof app.showCompletionScreen === 'function') {
+                        app.showCompletionScreen();
+                    } else {
+                        alert('All words completed for today!');
+                    }
+                } else {
+                    console.log('Session started:', response);
+                    // App will be reinitialized after API call
+                    location.reload();
+                }
             } else {
                 alert('Failed to start session');
             }
