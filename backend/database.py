@@ -8,7 +8,10 @@ import sqlite3
 from datetime import datetime, timedelta, date
 import os
 
-DB_PATH = "../data/spelling.db"
+IS_DOCKER = os.path.exists('/.dockerenv') or os.getenv('FLY_APP_NAME')
+BASE_DIR = '/app' if IS_DOCKER else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(BASE_DIR, 'data', 'spelling.db')
+os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
 def get_db():
     """Get database connection"""

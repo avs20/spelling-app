@@ -8,8 +8,10 @@ from datetime import datetime, timedelta
 from PIL import Image
 import io
 
-DB_PATH = "../data/spelling.db"
-DRAWINGS_DIR = "../data/drawings"
+IS_DOCKER = os.path.exists('/.dockerenv') or os.getenv('FLY_APP_NAME')
+BASE_DIR = '/app' if IS_DOCKER else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DB_PATH = os.path.join(BASE_DIR, 'data', 'spelling.db')
+DRAWINGS_DIR = os.path.join(BASE_DIR, 'data', 'drawings')
 
 
 def compress_drawing(filename):

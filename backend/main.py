@@ -39,11 +39,19 @@ app.add_middleware(
 # Initialize database
 init_db()
 
+# Determine if running in Docker/production
+import sys
+IS_DOCKER = os.path.exists('/.dockerenv') or os.getenv('FLY_APP_NAME')
+BASE_DIR = '/app' if IS_DOCKER else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # Serve frontend files
-app.mount("/static", StaticFiles(directory="../frontend"), name="static")
+frontend_dir = os.path.join(BASE_DIR, 'frontend')
+app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 
 # Serve drawings
-app.mount("/drawings", StaticFiles(directory="../data/drawings"), name="drawings")
+drawings_dir = os.path.join(BASE_DIR, 'data', 'drawings')
+os.makedirs(drawings_dir, exist_ok=True)
+app.mount("/drawings", StaticFiles(directory=drawings_dir), name="drawings")
 
 # Serve root and frontend pages
 from fastapi.responses import FileResponse
@@ -51,17 +59,17 @@ from fastapi.responses import FileResponse
 @app.get("/")
 async def root():
     """Serve main app page"""
-    return FileResponse("../frontend/index.html")
+    return FileResponse(os.path.join(frontend_dir, "index.html"))
 
 @app.get("/admin")
 async def admin():
     """Serve admin page"""
-    return FileResponse("../frontend/admin.html")
+    return FileResponse(os.path.join(frontend_dir, "admin.html"))
 
 @app.get("/dashboard")
 async def dashboard():
     """Serve dashboard page"""
-    return FileResponse("../frontend/dashboard.html")
+    return FileResponse(os.path.join(frontend_dir, "dashboard.html"))
 
 # Request/Response models
 class WordResponse(BaseModel):
