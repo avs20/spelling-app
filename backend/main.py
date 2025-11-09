@@ -108,32 +108,6 @@ async def user_profile_page():
     """Serve user profile page"""
     return FileResponse(os.path.join(frontend_dir, "user-profile.html"), media_type="text/html")
 
-# Catch-all for static assets (CSS, JS, images, etc.) - must be LAST route
-@app.get("/{path:path}")
-async def serve_static(path: str):
-    """Serve static files or return index.html for SPA routing"""
-    # Don't intercept API routes
-    if path.startswith("api/"):
-        raise HTTPException(status_code=404, detail="Not Found")
-    
-    file_path = os.path.join(frontend_dir, path)
-    
-    # If file exists and is a valid file (not directory), serve it
-    if os.path.isfile(file_path):
-        return FileResponse(file_path)
-    
-    # Otherwise, check if it's an HTML page we should serve
-    html_file = os.path.join(frontend_dir, f"{path}.html")
-    if os.path.isfile(html_file):
-        return FileResponse(html_file, media_type="text/html")
-    
-    # Default to index.html for SPA
-    index_path = os.path.join(frontend_dir, "index.html")
-    if os.path.isfile(index_path):
-        return FileResponse(index_path, media_type="text/html")
-    
-    raise HTTPException(status_code=404, detail="File not found")
-
 # Request/Response models
 class WordResponse(BaseModel):
     id: int
@@ -658,6 +632,28 @@ async def reset_database():
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
+# Catch-all for static assets and HTML pages (MUST be last route)
+@app.get("/{path:path}")
+async def serve_static(path: str):
+    """Serve static files or return index.html for SPA routing"""
+    file_path = os.path.join(frontend_dir, path)
+    
+    # If file exists, serve it
+    if os.path.isfile(file_path):
+        return FileResponse(file_path)
+    
+    # If path.html exists, serve it as HTML
+    if not path.endswith('.html'):
+        html_file = os.path.join(frontend_dir, f"{path}.html")
+        if os.path.isfile(html_file):
+            return FileResponse(html_file, media_type="text/html")
+    
+    # Default to index.html for SPA routing
+    index_path = os.path.join(frontend_dir, "index.html")
+    if os.path.isfile(index_path):
+        return FileResponse(index_path, media_type="text/html")
+    
+    raise HTTPException(status_code=404, detail="Not Found")
 
 
 if __name__ == "__main__":
