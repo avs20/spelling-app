@@ -256,8 +256,22 @@ class SpellingApp {
             // Phase 8: Trigger celebration event on correct answer
             if (isCorrect) {
                 document.dispatchEvent(new Event('correctAnswer'));
+                this.triggerCelebration();
             }
         }
+    }
+
+    triggerCelebration() {
+        /**
+         * Full-screen celebration animation on success
+         */
+        const body = document.body;
+        body.classList.add('celebration-active');
+        
+        // Remove animation class after animation completes
+        setTimeout(() => {
+            body.classList.remove('celebration-active');
+        }, 600);
     }
 
     clearFeedback() {

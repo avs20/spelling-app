@@ -321,6 +321,35 @@ main {
     }
 }
 
+/* Success Celebration Animation */
+@keyframes celebrate {
+    0% {
+        background: rgba(76, 175, 80, 0);
+        transform: scale(1);
+    }
+    50% {
+        background: rgba(76, 175, 80, 0.3);
+    }
+    100% {
+        background: rgba(76, 175, 80, 0);
+        transform: scale(1.05);
+    }
+}
+
+@keyframes pulse-border {
+    0%, 100% {
+        border: 3px solid var(--primary-color);
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+    }
+    50% {
+        box-shadow: 0 0 0 20px rgba(76, 175, 80, 0);
+    }
+}
+
+.celebration-active {
+    animation: celebrate 0.6s ease-out, pulse-border 0.6s ease-out;
+}
+
 /* Recall Input */
 .recall-input {
     width: 100%;
