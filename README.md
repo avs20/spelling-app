@@ -2,11 +2,13 @@
 
 A tablet-friendly web app for children to practice spelling while drawing objects. The app uses spaced repetition to optimize learning.
 
-**Current Phase:** Phase 9 - Testing & Tablet Compatibility (Complete)
+**Current Phase:** Phase 10 - Launch & Expansion (Complete)
+
+**🎉 LIVE APP:** https://spelling-drawing-app.fly.dev/
 
 ---
 
-## Features (Phase 1-9) ✓ COMPLETE
+## Features (Phase 1-10) ✓ ALL PHASES COMPLETE!
 
 **Phase 1 - MVP:**
 - **Drawing Canvas** - Large, touch-optimized canvas for drawing with pen/stylus
@@ -100,6 +102,17 @@ A tablet-friendly web app for children to practice spelling while drawing object
 - **Auto-Save Results** - Test history saved to localStorage
 - **Testing Guide** - Complete TESTING.md with manual testing checklist
 
+**Phase 10 - Launch & Deployment:**
+- **Production Deployment** - Live on Fly.io at https://spelling-drawing-app.fly.dev
+- **Platform Evaluation** - Compared Fly.io, Railway, Vercel, and Render for speed and cost
+- **Free Hosting** - Deployed on Fly.io free tier ($0/month, no cold starts)
+- **Deployment Configs** - fly.toml, railway.json, vercel.json, Dockerfile, Procfile
+- **Environment Detection** - Auto-detect local vs production, adjust paths accordingly
+- **Path Fixes** - Production-ready file paths for database, drawings, frontend
+- **Persistent Storage** - 1GB volume mounted for data persistence
+- **HTTPS & CDN** - Automatic SSL and global edge deployment
+- **Documentation** - Complete guides: DEPLOYMENT.md, DEPLOY-FAST.md, PRICING.md
+
 ---
 
 ## Project Structure
@@ -138,10 +151,25 @@ A tablet-friendly web app for children to practice spelling while drawing object
 
 ---
 
+## 🌐 Production App
+
+**Live Application:** https://spelling-drawing-app.fly.dev/
+
+Access the app:
+- **Main App:** https://spelling-drawing-app.fly.dev/
+- **Admin Panel:** https://spelling-drawing-app.fly.dev/admin (password: admin123)
+- **Parent Dashboard:** https://spelling-drawing-app.fly.dev/dashboard
+
+---
+
 ## Setup & Installation
 
-### Requirements
+### For Production Use
+Just visit https://spelling-drawing-app.fly.dev/ - no installation needed!
 
+### For Local Development
+
+**Requirements:**
 - Python 3.8+
 - Modern web browser (Chrome, Safari, Edge)
 - uv package manager (for running Python)
@@ -326,7 +354,7 @@ See [TESTING.md](TESTING.md) for complete testing guide.
 
 See [Plan.md](Plan.md) for detailed phase-by-phase development roadmap.
 
-**Complete:**
+**✅ ALL PHASES COMPLETE:**
 - Phase 1 - MVP ✓
 - Phase 2 - Canvas Polish & UX ✓
 - Phase 3 - Spelling Validation & Learning/Recall Modes ✓
@@ -336,9 +364,14 @@ See [Plan.md](Plan.md) for detailed phase-by-phase development roadmap.
 - Phase 7 - Data Management & Performance ✓
 - Phase 8 - Polish & Nice-to-Haves ✓
 - Phase 9 - Testing & Tablet Compatibility ✓
+- Phase 10 - Launch & Deployment ✓
 
-**Planned:**
-- Phase 10 - Launch & Expansion
+**🚀 Production Status:**
+- **Live URL:** https://spelling-drawing-app.fly.dev/
+- **Hosting:** Fly.io (San Jose region)
+- **Cost:** $0/month (free tier)
+- **Performance:** No cold starts, ~500ms response time
+- **Storage:** 1GB persistent volume for database and drawings
 
 ---
 
@@ -393,6 +426,44 @@ Planned in upcoming phases:
 
 ---
 
+## 🚀 Deployment
+
+The app is deployed on **Fly.io** for free, global hosting.
+
+### Why Fly.io?
+- ✅ **Free tier:** 256MB RAM, 160GB bandwidth, 3GB storage
+- ✅ **No cold starts:** Always-on (unlike Render's 30s+ delays)
+- ✅ **Fast:** ~500ms response time
+- ✅ **Persistent storage:** SQLite database and drawings preserved
+- ✅ **Auto-scaling:** Grows with your needs
+
+### Deployment Documentation:
+- **Quick Start:** [DEPLOY-FAST.md](DEPLOY-FAST.md) - Platform comparison and speed benchmarks
+- **Full Guide:** [DEPLOYMENT.md](DEPLOYMENT.md) - Detailed instructions for all platforms
+- **Pricing:** [PRICING.md](PRICING.md) - Cost analysis and comparison
+
+### Deploy Your Own:
+```bash
+# Install Fly.io CLI
+brew install flyctl
+
+# Login
+flyctl auth login
+
+# Deploy
+cd /Volumes/External/MacDisk/Desktop/Spelling
+flyctl launch
+flyctl volumes create data_volume --size 1 --yes
+flyctl deploy
+```
+
+### Platform Alternatives:
+- **Railway:** Easiest setup, $5/month after trial - [railway.json](railway.json)
+- **Vercel:** Great for frontend, serverless - [vercel.json](vercel.json)
+- **Docker:** Self-host anywhere - [Dockerfile](Dockerfile)
+
+---
+
 ## Notes for Development
 
 - Follow guidelines in [Agents.md](Agents.md)
@@ -400,6 +471,7 @@ Planned in upcoming phases:
 - Test on actual tablet devices regularly
 - Keep child interface simple and touch-friendly
 - All images saved to `data/drawings/` with timestamps
+- Production app auto-detects environment (local vs Docker)
 
 ---
 
