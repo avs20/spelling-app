@@ -338,7 +338,7 @@
                 if (!response.ok) throw new Error('Failed to load children');
 
                 const data = await response.json();
-                displayChildren(data.children);
+                displayChildren(data);
             } catch (error) {
                 showError('Failed to load children: ' + error.message);
             }

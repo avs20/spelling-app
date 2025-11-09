@@ -201,7 +201,7 @@ async def get_current_user_info(user_id: int = Depends(get_current_user)):
 
 # ===== PHASE 12: Child Management Endpoints =====
 
-@app.post("/api/children", response_model=ChildResponse)
+@app.post("/api/children", response_model=ChildResponse, status_code=201)
 async def create_child_profile(
     req: ChildCreateRequest,
     user_id: int = Depends(get_current_user)
@@ -218,7 +218,7 @@ async def create_child_profile(
 async def list_children(user_id: int = Depends(get_current_user)):
     """Get all children for logged-in user"""
     children = get_user_children(user_id)
-    return {"children": children}
+    return children
 
 @app.put("/api/children/{child_id}", response_model=ChildResponse)
 async def update_child_profile(
