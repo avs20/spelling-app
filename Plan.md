@@ -351,11 +351,16 @@ After **unsuccessful practice**:
 ## **PHASE 12: Multi-User & Multi-Child Support (Week 6-7)** In Progress
 **Goal:** Add user accounts, child profiles, and complete data isolation.
 
-**Current State:**
-- Single global database with no user/child distinction
-- All progress visible to anyone on internet
-- No authentication except hardcoded admin password
-- No way to restrict access to dashboards
+**Current State - PHASE 12 PROGRESS:**
+- ✓ Database schema updated with users/children tables
+- ✓ Authentication system implemented (JWT + password hashing)
+- ✓ Auth endpoints created (register, login, me)
+- ✓ Child management endpoints (CRUD operations)
+- ✓ Frontend auth pages created (login, register, select-child, profile)
+- ✓ Migration system implemented (migrate.py)
+- ✓ Dashboard updated with auth checks and headers
+- ✓ Main practice endpoints updated to require auth
+- ⏳ Still needed: Complete child_id filtering in word/practice queries
 
 **Database Changes Needed:**
 - Create `users` table (id, email, password_hash, created_date)
@@ -448,141 +453,132 @@ After **unsuccessful practice**:
 ## **PHASE 12 - Files to Create & Modify**
 
 **Backend - Database (backend/database.py):**
-- Modify: Add `users` table schema
-- Modify: Add `children` table schema
-- Modify: Add `user_id` column to `words` table (nullable)
-- Modify: Add `child_id` column to `practices` table
-- Modify: Update all queries to filter by user/child
-- Add: `create_user()`, `get_user_by_email()`, `verify_password()`, `hash_password()`
-- Add: `create_child()`, `get_user_children()`, `get_child_by_id()`
-- Add: `get_words_for_child()` (core words + family's custom words)
-- Add: Migration function to add new columns to existing tables
+- ✓ Modify: Add `users` table schema
+- ✓ Modify: Add `children` table schema
+- ✓ Modify: Add `user_id` column to `words` table (nullable)
+- ✓ Modify: Add `child_id` column to `practices` table
+- ⏳ Modify: Update all queries to filter by user/child
+- ✓ Add: `create_user()`, `get_user_by_email()`, `verify_password()`, `hash_password()`
+- ✓ Add: `create_child()`, `get_user_children()`, `get_child_by_id()`
+- ✓ Add: `get_words_for_child()` (core words + family's custom words)
+- ⏳ Add: Update word/practice queries for child_id filtering
 
-**Backend - Authentication (backend/auth.py) - NEW FILE:**
-- JWT configuration (secret key, algorithm, expiry)
-- `hash_password()` - bcrypt hash
-- `verify_password()` - bcrypt verify
-- `create_access_token()` - generate JWT
-- `verify_token()` - decode and validate JWT
-- `get_current_user()` - FastAPI dependency for protected routes
+**Backend - Authentication (backend/auth.py) - ✓ CREATED:**
+- ✓ JWT configuration (secret key, algorithm, expiry)
+- ✓ `hash_password()` - PBKDF2 hash
+- ✓ `verify_password()` - PBKDF2 verify
+- ✓ `create_access_token()` - generate JWT
+- ✓ `verify_token()` - decode and validate JWT
+- ✓ `get_current_user()` - FastAPI dependency for protected routes
 
-**Backend - Models (backend/models.py) - NEW FILE:**
-- `UserRegisterRequest` - email, password
-- `UserLoginRequest` - email, password
-- `UserResponse` - user info (no password)
-- `ChildCreateRequest` - name, age
-- `ChildResponse` - child info with parent
-- `WordResponse` - updated with user_id
-- `PracticeRequest` - updated with child_id
+**Backend - Models (backend/models.py) - ✓ CREATED:**
+- ✓ `UserRegisterRequest` - email, password
+- ✓ `UserLoginRequest` - email, password
+- ✓ `UserResponse` - user info (no password)
+- ✓ `ChildCreateRequest` - name, age
+- ✓ `ChildResponse` - child info with parent
+- ✓ `AddWordRequest` - word, category, reference_image
+- ✓ `PracticeRequest` - word_id, spelled_word, is_correct
 
 **Backend - Main (backend/main.py):**
-- Modify: Add JWT middleware to verify tokens
-- Modify: Update all endpoints to require auth
-- Modify: Add `child_id` parameter to practice/word endpoints
-- Add: `POST /api/auth/register` - create parent account
-- Add: `POST /api/auth/login` - login and get JWT token
-- Add: `POST /api/auth/logout` - logout (client-side token removal)
-- Add: `GET /api/auth/me` - get current user
-- Add: `POST /api/children` - create child
-- Add: `GET /api/children` - list user's children
-- Add: `PUT /api/children/{child_id}` - update child
-- Add: `DELETE /api/children/{child_id}` - delete child
-- Modify: `/api/next-word` - add child_id filter
-- Modify: `/api/practice` - require auth, filter by child_id
-- Modify: `/api/admin/words` - require auth, set user_id
-- Modify: All dashboard endpoints - require auth, filter by user
-- Remove: Old hardcoded admin password auth
+- ✓ Modify: Add JWT middleware to verify tokens
+- ⏳ Modify: Update all endpoints to require auth (in progress)
+- ⏳ Modify: Add `child_id` parameter to practice/word endpoints
+- ✓ Add: `POST /api/auth/register` - create parent account
+- ✓ Add: `POST /api/auth/login` - login and get JWT token
+- ✓ Add: `GET /api/auth/me` - get current user
+- ✓ Add: `POST /api/children` - create child
+- ✓ Add: `GET /api/children` - list user's children
+- ✓ Add: `PUT /api/children/{child_id}` - update child
+- ✓ Add: `DELETE /api/children/{child_id}` - delete child
+- ⏳ Modify: `/api/next-word` - add child_id filter
+- ⏳ Modify: `/api/practice` - add child_id tracking
+- ✓ Modify: `/api/admin/words` - now protected by auth
+- ⏳ Modify: All dashboard endpoints - add child_id filters
+- ✓ Remove: Old hardcoded admin password auth
 
 **Backend - Requirements (backend/requirements.txt):**
-- Add: `bcrypt>=4.0.0`
-- Add: `python-jose[cryptography]>=3.3.0`
-- Add: `pydantic-settings>=2.0.0`
+- ✓ Add: `python-jose[cryptography]>=3.3.0`
+- ✓ Verified: Existing `pydantic` includes email validator
 
-**Backend - Migration (backend/migrate.py) - NEW FILE:**
-- Run database schema migrations
-- Add users/children tables
-- Add user_id/child_id columns
-- Handle existing data (create default user or prompt)
-- Called once on startup
+**Backend - Migration (backend/migrate.py) - ✓ CREATED:**
+- ✓ Run database schema migrations
+- ✓ Create users/children/words/practices tables
+- ✓ Track applied migrations in schema_migrations table
+- ✓ Called once on startup via main.py
 
-**Frontend - Login Page (frontend/login.html) - NEW FILE:**
-- Email + password form
-- Register link
-- Submit to `/api/auth/login`
-- Store JWT in localStorage
-- Redirect to child selector on success
+**Frontend - Login Page (frontend/login.html) - ✓ CREATED:**
+- ✓ Email + password form
+- ✓ Register link
+- ✓ Submit to `/api/auth/login`
+- ✓ Store JWT in localStorage
+- ✓ Redirect to child selector on success
 
-**Frontend - Register Page (frontend/register.html) - NEW FILE:**
-- Email + password + confirm password form
-- Login link
-- Submit to `/api/auth/register`
-- Validate passwords match
-- Redirect to login on success
+**Frontend - Register Page (frontend/register.html) - ✓ CREATED:**
+- ✓ Email + password + confirm password form
+- ✓ Login link
+- ✓ Submit to `/api/auth/register`
+- ✓ Validate passwords match
+- ✓ Redirect to login on success
 
-**Frontend - Child Selector (frontend/select-child.html) - NEW FILE:**
-- List user's children
-- Select child button
-- "Create new child" form
-- Store selected child_id in localStorage
-- Redirect to main app (/) on selection
+**Frontend - Child Selector (frontend/select-child.html) - ✓ CREATED:**
+- ✓ List user's children
+- ✓ Select child button
+- ✓ "Create new child" form
+- ✓ Store selected child_id in localStorage
+- ✓ Redirect to main app (/) on selection
 
-**Frontend - User Profile (frontend/user-profile.html) - NEW FILE:**
-- Show logged-in user email
-- List children with edit/delete buttons
-- Create child form
-- Logout button
-- Access from main app
+**Frontend - User Profile (frontend/user-profile.html) - ✓ CREATED:**
+- ✓ Show logged-in user email
+- ✓ List children with edit/delete buttons
+- ✓ Create child form
+- ✓ Logout button
+- ✓ Access from main app
 
 **Frontend - Main App (frontend/index.html):**
-- Modify: Check for JWT token on load, redirect to login if missing
-- Modify: Check for selected child_id, redirect to child selector if missing
-- Modify: Add user profile link (top right)
-- Modify: Add logout button
-- Modify: Show current child name in UI
+- ✓ Modify: Check for JWT token on load, redirect to login if missing
+- ✓ Modify: Check for selected child_id, redirect to child selector if missing
+- ⏳ Modify: Add user profile link (top right)
+- ✓ Modify: Add logout button
+- ⏳ Modify: Show current child name in UI
+- ✓ Modify: Update progress badge with auth headers
 
 **Frontend - API Utilities (frontend/api.js):**
-- Modify: Add `setAuthToken()` to store JWT
-- Modify: Add `getAuthToken()` to retrieve JWT
-- Modify: Add `clearAuthToken()` to logout
-- Modify: Add Authorization header to all API calls: `Authorization: Bearer {token}`
-- Modify: Add `child_id` parameter to all practice/word API calls
-- Modify: Handle 401 errors - redirect to login
-- Add: `login(email, password)` - POST /api/auth/login
-- Add: `register(email, password)` - POST /api/auth/register
-- Add: `getCurrentUser()` - GET /api/auth/me
-- Add: `createChild(name, age)` - POST /api/children
-- Add: `getChildren()` - GET /api/children
-- Add: `updateChild(child_id, name, age)` - PUT /api/children/{child_id}
-- Add: `deleteChild(child_id)` - DELETE /api/children/{child_id}
+- ✓ Add: `setAuthToken()` - store JWT
+- ✓ Add: `getAuthToken()` - retrieve JWT
+- ✓ Add: `clearAuthToken()` - logout
+- ✓ Add: `getAuthHeaders()` - Authorization header for all API calls
+- ✓ Add: Handle 401 errors - redirect to login
+- ✓ Add: `register(email, password)` - POST /api/auth/register
+- ✓ Add: `login(email, password)` - POST /api/auth/login
+- ✓ Add: `getCurrentUser()` - GET /api/auth/me
+- ✓ Add: `createChild(name, age)` - POST /api/children
+- ✓ Add: `getChildren()` - GET /api/children
+- ✓ Add: `updateChild(child_id, name, age)` - PUT /api/children/{child_id}
+- ✓ Add: `deleteChild(child_id)` - DELETE /api/children/{child_id}
 
 **Frontend - Admin Page (frontend/admin.html):**
-- Modify: Add child/family selector at top
-- Modify: Show core words as read-only section
-- Modify: Show family custom words with edit/delete buttons
-- Modify: Add word form only adds to family
-- Modify: Restrict access to logged-in parent
-- Modify: Update all API calls to include auth header
+- ✓ Already updated: Restrict access to logged-in parent
+- ✓ Already updated: Include auth headers in all API calls
+- ⏳ Modify: Add child selector at top
+- ⏳ Modify: Show family custom words with filtering
 
 **Frontend - Dashboard (frontend/dashboard.html):**
-- Modify: Add logout button
-- Modify: Show only logged-in user's children data
-- Modify: Add child selector (view different child's stats)
-- Modify: Filter all stats by selected child_id
-- Modify: Restrict access to logged-in parent
+- ✓ Modify: Add logout button
+- ✓ Modify: Include auth headers in all API calls
+- ✓ Modify: Auth check on page load
+- ⏳ Modify: Add child selector (view different child's stats)
+- ⏳ Modify: Filter all stats by selected child_id
 
 **Frontend - App Logic (frontend/app.js):**
-- Modify: Add auth check on page load
-- Modify: Redirect to login if no token
-- Modify: Add child selection on startup
-- Modify: Pass child_id to all API calls
-- Add: `ensureAuthenticated()` - check token validity
-- Add: `ensureChildSelected()` - check child_id selected
-- Add: Redirect handlers for auth failures
+- ✓ Auth check already in place in index.html
+- ✓ Logout function already present
+- ⏳ Modify: Pass child_id to API calls if needed by backend
 
 ---
 
-**Summary of Changes:**
-- **New files:** 8 (2 backend, 6 frontend)
-- **Modified files:** 9 (5 backend, 4 frontend)
-- **Core changes:** Database schema, auth system, child selection flow, API protection
-- **Breaking changes:** All endpoints now require authentication
+**Summary of Changes - PHASE 12 Progress:**
+- **New files created:** 7 (2 backend: auth.py, migrate.py + models.py; 5 frontend: login.html, register.html, select-child.html, user-profile.html; api.js updated)
+- **Modified files:** 6 (backend/database.py, main.py, requirements.txt; frontend/index.html, dashboard.html, api.js)
+- **Core changes:** Database schema complete, auth system implemented, child selection flow created, API protection started
+- **Status:** 70% complete - core infrastructure done, remaining work is child_id filtering in queries and UI refinements
