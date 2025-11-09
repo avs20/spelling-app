@@ -112,6 +112,10 @@ async def user_profile_page():
 @app.get("/{path:path}")
 async def serve_static(path: str):
     """Serve static files or return index.html for SPA routing"""
+    # Don't intercept API routes
+    if path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="Not Found")
+    
     file_path = os.path.join(frontend_dir, path)
     
     # If file exists and is a valid file (not directory), serve it
