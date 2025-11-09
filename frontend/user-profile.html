@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Spelling & Drawing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            margin-top: 20px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .back-link {
+            margin-bottom: 20px;
+        }
+
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        .user-info {
+            background: #f8f8f8;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+
+        .user-email {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .user-email strong {
+            color: #333;
+        }
+
+        .section-title {
+            color: #333;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 30px 0 20px 0;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+
+        .children-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+
+        .child-item {
+            background: #f8f8f8;
+            padding: 16px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .child-info {
+            flex: 1;
+        }
+
+        .child-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .child-age {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .child-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-edit {
+            background: #e0e0e0;
+            color: #333;
+        }
+
+        .btn-edit:hover {
+            background: #d0d0d0;
+        }
+
+        .btn-delete {
+            background: #fee;
+            color: #c33;
+        }
+
+        .btn-delete:hover {
+            background: #fdd;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+            background: #f8f8f8;
+            border-radius: 8px;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .error {
+            background-color: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✏️ Profile</h1>
+        </div>
+
+        <div class="card">
+            <div class="back-link">
+                <a href="/select-child">← Back to Children</a>
+            </div>
+
+            <div class="error" id="errorMsg"></div>
+
+            <div class="user-info">
+                <div class="user-email">
+                    Email: <strong id="userEmail">Loading...</strong>
+                </div>
+            </div>
+
+            <div class="section-title">Children</div>
+            <div class="children-list" id="childrenList">
+                <div class="empty-state">Loading...</div>
+            </div>
+
+            <div class="buttons">
+                <button class="btn-secondary" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Child Modal -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-title">Edit Child</div>
+            <div class="form-group">
+                <label for="editName">Name</label>
+                <input type="text" id="editName" required>
+            </div>
+            <div class="form-group">
+                <label for="editAge">Age</label>
+                <input type="number" id="editAge" min="3" max="10">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-primary" onclick="saveEditChild()">Save</button>
+                <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let editingChildId = null;
+
+        window.addEventListener('load', async () => {
+            await loadUserInfo();
+            await loadChildren();
+        });
+
+        async function loadUserInfo() {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    window.location.href = '/login';
+                    return;
+                }
+
+                const response = await fetch('/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    localStorage.removeItem('authToken');
+                    window.location.href = '/login';
+                    return;
+                }
+
+                if (!response.ok) throw new Error('Failed to load user');
+
+                const user = await response.json();
+                document.getElementById('userEmail').textContent = user.email;
+            } catch (error) {
+                showError('Failed to load user: ' + error.message);
+            }
+        }
+
+        async function loadChildren() {
+            try {
+                const token = localStorage.getItem('authToken');
+
+                const response = await fetch('/api/children', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) throw new Error('Failed to load children');
+
+                const data = await response.json();
+                displayChildren(data.children);
+            } catch (error) {
+                showError('Failed to load children: ' + error.message);
+            }
+        }
+
+        function displayChildren(children) {
+            const list = document.getElementById('childrenList');
+            
+            if (children.length === 0) {
+                list.innerHTML = '<div class="empty-state">No children. Add one to get started!</div>';
+                return;
+            }
+
+            list.innerHTML = children.map(child => `
+                <div class="child-item">
+                    <div class="child-info">
+                        <div class="child-name">👧 ${child.name}</div>
+                        ${child.age ? `<div class="child-age">Age ${child.age}</div>` : ''}
+                    </div>
+                    <div class="child-actions">
+                        <button class="btn-small btn-edit" onclick="openEditModal(${child.id}, '${child.name}', ${child.age || ''})">Edit</button>
+                        <button class="btn-small btn-delete" onclick="deleteChild(${child.id}, '${child.name}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openEditModal(childId, name, age) {
+            editingChildId = childId;
+            document.getElementById('editName').value = name;
+            document.getElementById('editAge').value = age || '';
+            document.getElementById('editModal').classList.add('show');
+        }
+
+        function closeEditModal() {
+            editingChildId = null;
+            document.getElementById('editModal').classList.remove('show');
+        }
+
+        async function saveEditChild() {
+            if (!editingChildId) return;
+
+            const name = document.getElementById('editName').value.trim();
+            const age = document.getElementById('editAge').value || null;
+
+            if (!name) {
+                alert('Please enter child name');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`/api/children/${editingChildId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, age: age ? parseInt(age) : null })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    showError(data.detail || 'Failed to update child');
+                    return;
+                }
+
+                closeEditModal();
+                await loadChildren();
+            } catch (error) {
+                showError('Error: ' + error.message);
+            }
+        }
+
+        async function deleteChild(childId, childName) {
+            if (!confirm(`Delete ${childName} and all their practice data?`)) {
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch(`/api/children/${childId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    showError(data.detail || 'Failed to delete child');
+                    return;
+                }
+
+                await loadChildren();
+            } catch (error) {
+                showError('Error: ' + error.message);
+            }
+        }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('selectedChildId');
+                window.location.href = '/login';
+            }
+        }
+
+        function showError(message) {
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.textContent = message;
+            errorMsg.classList.add('show');
+        }
+    </script>
+</body>
+</html>

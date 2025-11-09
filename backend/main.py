@@ -1,9 +1,10 @@
 """
 Spelling & Drawing App - FastAPI Backend
 Phase 1: MVP - Core Canvas & Basic Spelling
+Phase 12: Multi-user and multi-child support
 """
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Depends, Header
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,16 +12,25 @@ from pydantic import BaseModel
 from datetime import datetime
 import os
 import uuid
+from typing import Optional
 from database import (
     init_db, get_word_for_practice, save_practice, get_all_words, get_word_by_id,
     update_word_on_success, get_words_for_today, add_word, update_word, delete_word,
     get_all_words_admin, get_practice_stats, get_word_accuracy, get_practice_trend,
-    get_recent_drawings, reset_db_to_initial
+    get_recent_drawings, reset_db_to_initial, create_user, get_user_by_email,
+    verify_password, create_child, get_user_children, get_child_by_id, update_child,
+    delete_child, get_words_for_child, update_word_on_success_for_child,
+    get_user_by_id
 )
 from data_management import (
     cleanup_old_drawings, get_storage_stats, optimize_database, create_backup
 )
 from session import WordSession
+from auth import create_access_token, verify_token, get_user_id_from_token
+from models import (
+    UserRegisterRequest, UserLoginRequest, UserResponse, TokenResponse,
+    ChildCreateRequest, ChildUpdateRequest, ChildResponse, AddWordRequest, PracticeRequest
+)
 
 app = FastAPI()
 
@@ -78,6 +88,26 @@ async def dashboard():
     """Serve dashboard page"""
     return FileResponse(os.path.join(frontend_dir, "dashboard.html"), media_type="text/html")
 
+@app.get("/login")
+async def login_page():
+    """Serve login page"""
+    return FileResponse(os.path.join(frontend_dir, "login.html"), media_type="text/html")
+
+@app.get("/register")
+async def register_page():
+    """Serve register page"""
+    return FileResponse(os.path.join(frontend_dir, "register.html"), media_type="text/html")
+
+@app.get("/select-child")
+async def select_child_page():
+    """Serve child selector page"""
+    return FileResponse(os.path.join(frontend_dir, "select-child.html"), media_type="text/html")
+
+@app.get("/user-profile")
+async def user_profile_page():
+    """Serve user profile page"""
+    return FileResponse(os.path.join(frontend_dir, "user-profile.html"), media_type="text/html")
+
 # Request/Response models
 class WordResponse(BaseModel):
     id: int
@@ -85,21 +115,141 @@ class WordResponse(BaseModel):
     category: str
     successful_days: int
 
-class PracticeRequest(BaseModel):
-    word_id: int
-    spelled_word: str
-    is_correct: bool
-
 class PracticeResponse(BaseModel):
     success: bool
     message: str
     drawing_filename: str
+
+# ===== PHASE 12: Auth Dependencies =====
+
+async def get_current_user(authorization: Optional[str] = Header(None)) -> int:
+    """
+    Dependency to get current user from JWT token
+    Raises HTTPException 401 if token invalid or missing
+    """
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Missing authorization header")
+    
+    # Extract token from "Bearer {token}"
+    try:
+        scheme, token = authorization.split()
+        if scheme.lower() != "bearer":
+            raise HTTPException(status_code=401, detail="Invalid authorization scheme")
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Invalid authorization header format")
+    
+    user_id = get_user_id_from_token(token)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    
+    return user_id
+
+async def verify_child_ownership(child_id: int, user_id: int) -> dict:
+    """
+    Verify that child belongs to user
+    Returns child data if valid
+    """
+    child = get_child_by_id(child_id)
+    if not child or child['user_id'] != user_id:
+        raise HTTPException(status_code=403, detail="Access denied: child not found or doesn't belong to you")
+    return child
 
 # Routes
 @app.get("/api/health")
 async def health_check():
     """Check if API is running"""
     return {"status": "ok"}
+
+# ===== PHASE 12: Authentication Endpoints =====
+
+@app.post("/api/auth/register", response_model=UserResponse)
+async def register(req: UserRegisterRequest):
+    """Register new parent account"""
+    try:
+        if len(req.password) < 6:
+            raise HTTPException(status_code=400, detail="Password must be at least 6 characters")
+        
+        user_id = create_user(req.email, req.password)
+        user = get_user_by_id(user_id)
+        return user
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/auth/login", response_model=TokenResponse)
+async def login(req: UserLoginRequest):
+    """Login and get JWT token"""
+    user = get_user_by_email(req.email)
+    
+    if not user or not verify_password(req.password, user['password_hash']):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    access_token = create_access_token({"sub": str(user['id'])})
+    return TokenResponse(access_token=access_token)
+
+@app.get("/api/auth/me", response_model=UserResponse)
+async def get_current_user_info(user_id: int = Depends(get_current_user)):
+    """Get current logged-in user info"""
+    user = get_user_by_id(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+# ===== PHASE 12: Child Management Endpoints =====
+
+@app.post("/api/children", response_model=ChildResponse)
+async def create_child_profile(
+    req: ChildCreateRequest,
+    user_id: int = Depends(get_current_user)
+):
+    """Create new child profile for user"""
+    try:
+        child_id = create_child(user_id, req.name, req.age)
+        child = get_child_by_id(child_id)
+        return child
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/children")
+async def list_children(user_id: int = Depends(get_current_user)):
+    """Get all children for logged-in user"""
+    children = get_user_children(user_id)
+    return {"children": children}
+
+@app.put("/api/children/{child_id}", response_model=ChildResponse)
+async def update_child_profile(
+    child_id: int,
+    req: ChildUpdateRequest,
+    user_id: int = Depends(get_current_user)
+):
+    """Update child profile"""
+    # Verify ownership
+    await verify_child_ownership(child_id, user_id)
+    
+    try:
+        update_child(child_id, req.name, req.age)
+        child = get_child_by_id(child_id)
+        return child
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/api/children/{child_id}")
+async def delete_child_profile(
+    child_id: int,
+    user_id: int = Depends(get_current_user)
+):
+    """Delete child and all their practices"""
+    # Verify ownership
+    await verify_child_ownership(child_id, user_id)
+    
+    try:
+        success = delete_child(child_id)
+        if success:
+            return {"success": True, "message": "Child deleted successfully"}
+        raise HTTPException(status_code=404, detail="Child not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/words")
 async def get_words():

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Child - Spelling & Drawing</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+            margin-top: 20px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .children-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .child-button {
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .child-button:hover {
+            border-color: #667eea;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+
+        .child-button.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .child-emoji {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .child-name {
+            font-weight: 600;
+            color: #333;
+            display: block;
+        }
+
+        .child-age {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .divider {
+            height: 1px;
+            background: #e0e0e0;
+            margin: 30px 0;
+        }
+
+        .create-child-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .error {
+            background-color: #fee;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .success {
+            background-color: #efe;
+            color: #3c3;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .success.show {
+            display: block;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            font-size: 14px;
+            color: #667eea;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .profile-link {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .profile-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .profile-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✏️ Spelling</h1>
+            <p>Select a child to practice</p>
+        </div>
+
+        <div class="card">
+            <div class="profile-link">
+                <a href="/user-profile">👤 Profile & Settings</a>
+            </div>
+
+            <div class="error" id="errorMsg"></div>
+            <div class="success" id="successMsg"></div>
+
+            <h2 style="color: #333; margin-bottom: 20px;">Your Children</h2>
+
+            <div class="children-grid" id="childrenGrid">
+                <div class="empty-state">
+                    <div class="empty-state-icon">👶</div>
+                    <p>No children added yet. Create one below!</p>
+                </div>
+            </div>
+
+            <div class="buttons" id="actionButtons" style="display: none;">
+                <button class="btn-primary" id="selectBtn">Start Practicing</button>
+                <button class="btn-secondary" onclick="clearSelection()">Cancel</button>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="create-child-section">
+                <h3>Add New Child</h3>
+                <div class="form-group">
+                    <label for="childName">Name</label>
+                    <input type="text" id="childName" placeholder="e.g., Emma" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="childAge">Age (optional)</label>
+                    <input type="number" id="childAge" min="3" max="10" placeholder="e.g., 4">
+                </div>
+
+                <button class="btn-primary" id="createBtn">Add Child</button>
+                <div class="loading" id="createLoading">
+                    <span class="spinner"></span> Creating child...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedChildId = null;
+
+        // Load children on page load
+        window.addEventListener('load', async () => {
+            await loadChildren();
+        });
+
+        async function loadChildren() {
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    window.location.href = '/login';
+                    return;
+                }
+
+                const response = await fetch('/api/children', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    localStorage.removeItem('authToken');
+                    window.location.href = '/login';
+                    return;
+                }
+
+                if (!response.ok) throw new Error('Failed to load children');
+
+                const data = await response.json();
+                displayChildren(data.children);
+            } catch (error) {
+                showError('Failed to load children: ' + error.message);
+            }
+        }
+
+        function displayChildren(children) {
+            const grid = document.getElementById('childrenGrid');
+            
+            if (children.length === 0) {
+                grid.innerHTML = '<div class="empty-state"><div class="empty-state-icon">👶</div><p>No children added yet. Create one below!</p></div>';
+                return;
+            }
+
+            grid.innerHTML = children.map(child => `
+                <button class="child-button" onclick="selectChild(${child.id}, event)">
+                    <div class="child-emoji">👧</div>
+                    <span class="child-name">${child.name}</span>
+                    ${child.age ? `<div class="child-age">Age ${child.age}</div>` : ''}
+                </button>
+            `).join('');
+        }
+
+        function selectChild(childId, event) {
+            event.preventDefault();
+            selectedChildId = childId;
+            
+            // Update UI
+            document.querySelectorAll('.child-button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            event.target.closest('.child-button').classList.add('selected');
+            
+            // Show action buttons
+            document.getElementById('actionButtons').style.display = 'flex';
+        }
+
+        function clearSelection() {
+            selectedChildId = null;
+            document.querySelectorAll('.child-button').forEach(btn => {
+                btn.classList.remove('selected');
+            });
+            document.getElementById('actionButtons').style.display = 'none';
+        }
+
+        document.getElementById('selectBtn').addEventListener('click', async () => {
+            if (!selectedChildId) {
+                showError('Please select a child');
+                return;
+            }
+
+            try {
+                localStorage.setItem('selectedChildId', selectedChildId);
+                window.location.href = '/';
+            } catch (error) {
+                showError('Error: ' + error.message);
+            }
+        });
+
+        document.getElementById('createBtn').addEventListener('click', async () => {
+            const name = document.getElementById('childName').value.trim();
+            const age = document.getElementById('childAge').value || null;
+
+            if (!name) {
+                showError('Please enter child name');
+                return;
+            }
+
+            const createBtn = document.getElementById('createBtn');
+            const createLoading = document.getElementById('createLoading');
+            createBtn.style.display = 'none';
+            createLoading.style.display = 'block';
+
+            try {
+                const token = localStorage.getItem('authToken');
+                if (!token) {
+                    window.location.href = '/login';
+                    return;
+                }
+
+                const response = await fetch('/api/children', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, age: age ? parseInt(age) : null })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showError(data.detail || 'Failed to create child');
+                    createBtn.style.display = 'block';
+                    createLoading.style.display = 'none';
+                    return;
+                }
+
+                // Clear form
+                document.getElementById('childName').value = '';
+                document.getElementById('childAge').value = '';
+
+                showSuccess(`${name} added successfully!`);
+                await loadChildren();
+
+                createBtn.style.display = 'block';
+                createLoading.style.display = 'none';
+            } catch (error) {
+                showError('Error: ' + error.message);
+                createBtn.style.display = 'block';
+                createLoading.style.display = 'none';
+            }
+        });
+
+        function showError(message) {
+            const errorMsg = document.getElementById('errorMsg');
+            errorMsg.textContent = message;
+            errorMsg.classList.add('show');
+            setTimeout(() => errorMsg.classList.remove('show'), 5000);
+        }
+
+        function showSuccess(message) {
+            const successMsg = document.getElementById('successMsg');
+            successMsg.textContent = message;
+            successMsg.classList.add('show');
+            setTimeout(() => successMsg.classList.remove('show'), 5000);
+        }
+    </script>
+</body>
+</html>

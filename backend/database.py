@@ -2,11 +2,14 @@
 Database setup and operations
 SQLite database for words and practices
 Phase 4: Spaced repetition tracking
+Phase 12: Multi-user and multi-child support
 """
 
 import sqlite3
 from datetime import datetime, timedelta, date
 import os
+import hashlib
+import secrets
 
 IS_DOCKER = os.path.exists('/.dockerenv') or os.getenv('FLY_APP_NAME')
 BASE_DIR = '/app' if IS_DOCKER else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -24,45 +27,74 @@ def init_db():
     conn = get_db()
     cursor = conn.cursor()
     
+    # Users table - Phase 12: Parent/teacher accounts
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            email TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Children table - Phase 12: Child profiles linked to users
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS children (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            age INTEGER,
+            created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    """)
+    
     # Words table - Phase 4: Added successful_days, last_practiced, next_review
     # Phase 5: Added reference_image
+    # Phase 12: Added user_id for family custom words (NULL = core/global)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS words (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            word TEXT NOT NULL UNIQUE,
+            word TEXT NOT NULL,
             category TEXT NOT NULL,
             successful_days INTEGER DEFAULT 0,
             last_practiced DATE,
             next_review DATE,
             reference_image TEXT,
-            created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            user_id INTEGER,
+            created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(id),
+            UNIQUE(word, user_id)
         )
     """)
     
-    # Practices table
+    # Practices table - Phase 12: Added child_id to tie practices to specific child
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS practices (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             word_id INTEGER NOT NULL,
+            child_id INTEGER NOT NULL,
             spelled_word TEXT NOT NULL,
             is_correct BOOLEAN NOT NULL,
             drawing_filename TEXT,
             practiced_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (word_id) REFERENCES words(id)
+            FOREIGN KEY (word_id) REFERENCES words(id),
+            FOREIGN KEY (child_id) REFERENCES children(id)
         )
     """)
     
     # Insert test words if empty - Phase 4: Initialize with next_review = today
+    # Phase 12: Core words have user_id = NULL
     cursor.execute("SELECT COUNT(*) FROM words")
     if cursor.fetchone()[0] == 0:
         today = date.today().isoformat()
         test_words = [
-            ("bee", "insects", 0, None, today),
-            ("spider", "insects", 0, None, today),
-            ("butterfly", "insects", 0, None, today)
+            ("bee", "insects", 0, None, today, None),
+            ("spider", "insects", 0, None, today, None),
+            ("butterfly", "insects", 0, None, today, None)
         ]
         cursor.executemany(
-            "INSERT INTO words (word, category, successful_days, last_practiced, next_review) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO words (word, category, successful_days, last_practiced, next_review, user_id) VALUES (?, ?, ?, ?, ?, ?)",
             test_words
         )
     
@@ -441,14 +473,231 @@ def reset_db_to_initial():
     
     # Re-insert initial words
     test_words = [
-        ("bee", "insects", 0, None, today),
-        ("spider", "insects", 0, None, today),
-        ("butterfly", "insects", 0, None, today)
+        ("bee", "insects", 0, None, today, None),
+        ("spider", "insects", 0, None, today, None),
+        ("butterfly", "insects", 0, None, today, None)
     ]
     cursor.executemany(
-        "INSERT INTO words (word, category, successful_days, last_practiced, next_review) VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO words (word, category, successful_days, last_practiced, next_review, user_id) VALUES (?, ?, ?, ?, ?, ?)",
         test_words
     )
+    
+    conn.commit()
+    conn.close()
+    return True
+
+# ===== PHASE 12: User & Child Management =====
+
+def hash_password(password: str) -> str:
+    """Hash password using PBKDF2"""
+    salt = secrets.token_hex(32)
+    hash_obj = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000)
+    return f"{salt}${hash_obj.hex()}"
+
+def verify_password(password: str, password_hash: str) -> bool:
+    """Verify password against hash"""
+    try:
+        salt, hash_hex = password_hash.split('$')
+        hash_obj = hashlib.pbkdf2_hmac('sha256', password.encode(), salt.encode(), 100000)
+        return hash_obj.hex() == hash_hex
+    except:
+        return False
+
+def create_user(email: str, password: str) -> int:
+    """Create new user account. Returns user_id."""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    try:
+        password_hash = hash_password(password)
+        cursor.execute(
+            "INSERT INTO users (email, password_hash) VALUES (?, ?)",
+            (email.lower(), password_hash)
+        )
+        conn.commit()
+        user_id = cursor.lastrowid
+        conn.close()
+        return user_id
+    except sqlite3.IntegrityError:
+        conn.close()
+        raise ValueError(f"Email '{email}' already registered")
+
+def get_user_by_email(email: str):
+    """Get user by email"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, email, password_hash FROM users WHERE email = ?", (email.lower(),))
+    user = cursor.fetchone()
+    conn.close()
+    return dict(user) if user else None
+
+def get_user_by_id(user_id: int):
+    """Get user by ID"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, email, created_date FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    return dict(user) if user else None
+
+def create_child(user_id: int, name: str, age: int = None) -> int:
+    """Create child profile. Returns child_id."""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO children (user_id, name, age) VALUES (?, ?, ?)",
+        (user_id, name, age)
+    )
+    conn.commit()
+    child_id = cursor.lastrowid
+    conn.close()
+    return child_id
+
+def get_user_children(user_id: int):
+    """Get all children for a user"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, user_id, name, age, created_date FROM children WHERE user_id = ? ORDER BY created_date DESC",
+        (user_id,)
+    )
+    children = cursor.fetchall()
+    conn.close()
+    return [dict(c) for c in children]
+
+def get_child_by_id(child_id: int):
+    """Get child by ID"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, user_id, name, age, created_date FROM children WHERE id = ?",
+        (child_id,)
+    )
+    child = cursor.fetchone()
+    conn.close()
+    return dict(child) if child else None
+
+def update_child(child_id: int, name: str = None, age: int = None) -> bool:
+    """Update child profile"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    updates = []
+    params = []
+    
+    if name:
+        updates.append("name = ?")
+        params.append(name)
+    if age is not None:
+        updates.append("age = ?")
+        params.append(age)
+    
+    if not updates:
+        conn.close()
+        return False
+    
+    params.append(child_id)
+    query = f"UPDATE children SET {', '.join(updates)} WHERE id = ?"
+    cursor.execute(query, params)
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+    return affected > 0
+
+def delete_child(child_id: int) -> bool:
+    """Delete child and all their practices"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("DELETE FROM practices WHERE child_id = ?", (child_id,))
+    cursor.execute("DELETE FROM children WHERE id = ?", (child_id,))
+    
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+    return affected > 0
+
+def get_words_for_child(child_id: int):
+    """
+    Phase 12: Get words available for child
+    Returns core words (user_id IS NULL) + family's custom words
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Get child's user_id first
+    cursor.execute("SELECT user_id FROM children WHERE id = ?", (child_id,))
+    result = cursor.fetchone()
+    if not result:
+        conn.close()
+        return []
+    
+    user_id = result[0]
+    today = date.today().isoformat()
+    
+    # Get core words + family's custom words, ready for today
+    cursor.execute("""
+        SELECT id, word, category, successful_days, user_id
+        FROM words
+        WHERE (user_id IS NULL OR user_id = ?)
+        AND next_review <= ?
+        ORDER BY RANDOM()
+    """, (user_id, today))
+    
+    words = cursor.fetchall()
+    conn.close()
+    return [dict(w) for w in words]
+
+def update_word_on_success_for_child(word_id: int, child_id: int):
+    """
+    Phase 12: Update word progress after successful practice for a child
+    Same logic as before, but child_id is tracked
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    today = date.today().isoformat()
+    
+    # Verify child_id owns this word (indirectly via user_id)
+    cursor.execute("""
+        SELECT c.user_id FROM children c WHERE c.id = ?
+    """, (child_id,))
+    result = cursor.fetchone()
+    if not result:
+        conn.close()
+        return False
+    
+    # Get current word data
+    cursor.execute("SELECT successful_days, last_practiced FROM words WHERE id = ?", (word_id,))
+    row = cursor.fetchone()
+    
+    if not row:
+        conn.close()
+        return False
+    
+    current_successful_days, last_practiced = row
+    
+    # Only increment if not already practiced today
+    if last_practiced == today:
+        conn.close()
+        return False
+    
+    # Increment successful_days
+    new_successful_days = current_successful_days + 1
+    
+    # Calculate next_review
+    if new_successful_days == 1:
+        next_review = (date.today() + timedelta(days=2)).isoformat()
+    elif new_successful_days >= 2:
+        next_review = (date.today() + timedelta(days=3)).isoformat()
+    else:
+        next_review = (date.today() + timedelta(days=1)).isoformat()
+    
+    # Update word record
+    cursor.execute("""
+        UPDATE words
+        SET successful_days = ?, last_practiced = ?, next_review = ?
+        WHERE id = ?
+    """, (new_successful_days, today, next_review, word_id))
     
     conn.commit()
     conn.close()
