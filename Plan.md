@@ -258,6 +258,15 @@ After **unsuccessful practice**:
 **Features Implemented:**
 - ✓ Visual regression testing with Playwright (17 screenshots)
 - ✓ Automated compatibility test suite (browser features, touch, canvas, performance)
+
+## Smart Word Cycling (In Progress)
+- Prevent consecutive duplicate words in a session
+- Support selecting N words for today's session
+- Implement Anki-like queue system
+  - Create queue of selected words
+  - Cycle through words (no duplicates in a row)
+  - Remove from current position on correct, keep in pool
+  - Session ends when all N words mastered
 - ✓ Screenshot capture with timestamp for verification
 - ✓ Text report generation with test results
 - ✓ Different screen sizes/orientations tested (desktop, mobile, tablet)

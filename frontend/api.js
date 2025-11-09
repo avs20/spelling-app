@@ -29,6 +29,20 @@ class API {
         }
     }
 
+    static async startSession(numWords = null) {
+        try {
+            const url = numWords 
+                ? `${API_BASE}/session/start?num_words=${numWords}`
+                : `${API_BASE}/session/start`;
+            const response = await fetch(url, { method: 'POST' });
+            if (!response.ok) throw new Error('Failed to start session');
+            return await response.json();
+        } catch (e) {
+            console.error('Error starting session:', e);
+            return null;
+        }
+    }
+
     static async getNextWord() {
         try {
             const response = await fetch(`${API_BASE}/next-word`);

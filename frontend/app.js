@@ -12,6 +12,8 @@ class SpellingApp {
         this.successfulDays = 0;  // Phase 4: Days successfully practiced (from backend)
         this.practicedWordsToday = new Set();  // Phase 4: Track words practiced in this session
         this.isSubmitting = false;  // Prevent double-submit
+        this.sessionActive = false;  // Track if session is active
+        this.sessionStats = null;  // Session progress stats
 
         // Audio context for sound effects
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -58,7 +60,8 @@ class SpellingApp {
             console.warn('API not available, using test mode');
         }
 
-        // Load next word
+        // TODO: Option to start session with num_words limit
+        // For now, load next word without session
         await this.loadNextWord();
     }
 
@@ -74,6 +77,8 @@ class SpellingApp {
         this.currentWord = wordData.word;
         this.currentWordId = wordData.id;
         this.successfulDays = wordData.successful_days || 0;  // Phase 4: Get from backend
+        this.sessionStats = wordData.session;  // Get session stats if active
+        this.sessionActive = !!this.sessionStats;  // Mark session as active if stats returned
         this.spelledLetters = [];
         this.attemptCount = 0;  // Reset attempt count for new word
         this.isSubmitting = false;  // Reset submit flag for new word
@@ -83,6 +88,7 @@ class SpellingApp {
         this.renderLetters();
         this.updateSpelledDisplay();
         this.updateModeIndicator();
+        this.updateSessionIndicator();  // Update session progress display
         this.clearFeedback();
         canvas.clear();
         this.updateUndoRedoButtons();
@@ -269,6 +275,18 @@ class SpellingApp {
                 this.modeIndicator.textContent = `Recall Mode (Mastered - typing practice)`;
                 this.modeIndicator.className = 'mode-recall';
             }
+        }
+    }
+
+    updateSessionIndicator() {
+        /**
+         * Show session progress if active
+         * Displays: Mastered X/N words
+         */
+        if (this.sessionActive && this.sessionStats) {
+            const progress = `Session: ${this.sessionStats.mastered}/${this.sessionStats.total_words} words mastered`;
+            console.log(progress);
+            // TODO: Display session progress in UI
         }
     }
 

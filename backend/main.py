@@ -20,6 +20,7 @@ from database import (
 from data_management import (
     cleanup_old_drawings, get_storage_stats, optimize_database, create_backup
 )
+from session import WordSession
 
 app = FastAPI()
 
@@ -38,6 +39,9 @@ app.add_middleware(
 
 # Initialize database
 init_db()
+
+# Global session state (per client session)
+current_session = None
 
 # Determine if running in Docker/production
 import sys
@@ -113,22 +117,105 @@ async def get_todays_words():
     words = get_words_for_today()
     return {"words": words}
 
+@app.post("/api/session/start")
+async def start_session(num_words: int = None):
+    """
+    Start a new practice session with optional word limit
+    
+    Args:
+        num_words: Limit session to N words (None = all available)
+    
+    Returns:
+        Session info and first word
+    """
+    global current_session
+    
+    # Create new session
+    current_session = WordSession(num_words=num_words)
+    
+    # Get first word
+    word_id = current_session.get_next_word_id()
+    
+    if not word_id:
+        raise HTTPException(status_code=404, detail="No words available for today")
+    
+    word = get_word_by_id(word_id)
+    if not word:
+        raise HTTPException(status_code=404, detail="Word not found")
+    
+    # Get word record for successful_days
+    conn = get_db() if 'get_db' in globals() else None
+    from database import get_db as db_get
+    conn = db_get()
+    cursor = conn.cursor()
+    cursor.execute("SELECT successful_days FROM words WHERE id = ?", (word_id,))
+    word_data = cursor.fetchone()
+    conn.close()
+    
+    successful_days = word_data[0] if word_data else 0
+    
+    stats = current_session.get_session_stats()
+    
+    return {
+        "id": word_id,
+        "word": word[0],
+        "category": word[1],
+        "successful_days": successful_days,
+        "session": stats
+    }
+
 @app.get("/api/next-word")
 async def next_word():
     """
-    Phase 4: Get next word to practice
+    Get next word to practice
+    Uses session queue if active, otherwise falls back to default behavior
     Returns only words where next_review <= today
     Includes successful_days to determine mode (Learning vs Recall)
     """
-    word = get_word_for_practice()
-    if word:
-        return {
-            "id": word[0],
-            "word": word[1],
-            "category": word[2],
-            "successful_days": word[3]
-        }
-    raise HTTPException(status_code=404, detail="No words available")
+    global current_session
+    
+    # If no session active, get next available word
+    if not current_session or not current_session.session_started:
+        word = get_word_for_practice()
+        if word:
+            return {
+                "id": word[0],
+                "word": word[1],
+                "category": word[2],
+                "successful_days": word[3],
+                "session": None
+            }
+        raise HTTPException(status_code=404, detail="No words available")
+    
+    # Get next word from session queue
+    word_id = current_session.get_next_word_id()
+    
+    if not word_id:
+        raise HTTPException(status_code=404, detail="Session complete - all words mastered")
+    
+    word = get_word_by_id(word_id)
+    if not word:
+        raise HTTPException(status_code=404, detail="Word not found")
+    
+    # Get word record for successful_days
+    from database import get_db
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT successful_days FROM words WHERE id = ?", (word_id,))
+    word_data = cursor.fetchone()
+    conn.close()
+    
+    successful_days = word_data[0] if word_data else 0
+    
+    stats = current_session.get_session_stats()
+    
+    return {
+        "id": word_id,
+        "word": word[0],
+        "category": word[1],
+        "successful_days": successful_days,
+        "session": stats
+    }
 
 @app.post("/api/practice")
 async def submit_practice(
@@ -138,6 +225,8 @@ async def submit_practice(
     is_correct: str = Form(...)
 ):
     """Submit practice: save drawing + spelling"""
+    global current_session
+    
     try:
         # Save drawing file (use absolute path)
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -158,7 +247,14 @@ async def submit_practice(
             is_correct_bool = is_correct.lower() == 'true'
             save_practice(word_id, spelled_word, is_correct_bool, filename)
             
-            # Phase 4: Update word progress if correct
+            # Update session queue if active
+            if current_session and current_session.session_started:
+                if is_correct_bool:
+                    current_session.mark_word_mastered(word_id)
+                else:
+                    current_session.mark_word_incorrect(word_id)
+            
+            # Update word progress if correct
             if is_correct_bool:
                 update_word_on_success(word_id)
         else:
