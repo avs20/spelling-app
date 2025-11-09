@@ -2,7 +2,7 @@
 
 A tablet-friendly web app for children to practice spelling while drawing objects. The app uses spaced repetition to optimize learning.
 
-**Current Phase:** Phase 12 - Smart Word Cycling (In Progress)
+**Current Phase:** Phase 12 - Multi-User & Multi-Child Support ✓ COMPLETE
 
 **🎉 LIVE APP:** https://spelling-drawing-app.fly.dev/
 
@@ -121,17 +121,18 @@ A tablet-friendly web app for children to practice spelling while drawing object
 - **Production Deployed** - Fix deployed and verified on Fly.io
 - **App Rendering** - App now displays with proper styling and functionality
 
-**Phase 12 - Smart Word Cycling:**
-- **Anki-Style Queue System** - Words cycle with intelligent sequencing (no consecutive duplicates)
-- **Session-Based Practice** - Users choose to practice 5, 10, or all available words
-- **No Duplicate Pairs** - Same word never appears twice in a row (unless only word left)
-- **Word Rotation** - After correct answer, word moves to end of queue to cycle with others
-- **Session Progress Tracking** - Display X/Y words mastered during current session
-- **Session Modal UI** - Beautiful selector to choose session word limit at startup
-- **Progress Indicator** - Real-time display of session progress and option to end early
-- **Session Completion** - Show button to start new session when current session ends
-- **Backward Compatible** - Works with existing spaced repetition without conflicts
-- **Integration Tested** - Comprehensive tests verify queue logic across 50+ attempts
+**Phase 12 - Multi-User & Multi-Child Support:**
+- **User Authentication** - JWT-based registration and login system with secure password hashing
+- **Child Profile Management** - Create, update, and delete child profiles (name, age)
+- **Child Selector UI** - Beautiful interface to select which child is practicing
+- **User Profile Page** - Manage account settings and children from one place
+- **Data Isolation** - Each family only sees their own children and practice data
+- **Session Persistence** - Auth tokens and child selection saved across page reloads
+- **Protected Endpoints** - All API routes secured with JWT middleware
+- **Word Filtering** - Support for core words (global) + family custom words (private)
+- **Comprehensive Testing** - 32 Playwright tests covering all auth flows (100% passing)
+- **Database Migrations** - Automatic schema updates with migration system
+- **Responsive Design** - Auth pages work on mobile, tablet, and desktop
 
 ---
 
