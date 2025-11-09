@@ -11,6 +11,7 @@ class SpellingApp {
         this.attemptCount = 0;  // Track attempts within a session
         this.successfulDays = 0;  // Phase 4: Days successfully practiced (from backend)
         this.practicedWordsToday = new Set();  // Phase 4: Track words practiced in this session
+        this.isSubmitting = false;  // Prevent double-submit
 
         // Audio context for sound effects
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -72,6 +73,7 @@ class SpellingApp {
         this.successfulDays = wordData.successful_days || 0;  // Phase 4: Get from backend
         this.spelledLetters = [];
         this.attemptCount = 0;  // Reset attempt count for new word
+        this.isSubmitting = false;  // Reset submit flag for new word
         this.practicedWordsToday.add(this.currentWordId);  // Phase 4: Mark as practiced today
 
         this.wordDisplay.textContent = this.currentWord;
@@ -335,11 +337,17 @@ class SpellingApp {
     }
 
     async submitPractice() {
+        // Prevent double-submit (when only one word left and user clicks Done multiple times)
+        if (this.isSubmitting) {
+            return;
+        }
+
         if (!this.currentWordId || this.spelledLetters.length === 0) {
             this.showFeedback(false, 'Please spell the word first');
             return;
         }
 
+        this.isSubmitting = true;
         const spelledWord = this.spelledLetters.join('').toLowerCase();
         const isCorrect = spelledWord === this.currentWord.toLowerCase();
         this.attemptCount++;
@@ -381,6 +389,7 @@ class SpellingApp {
             } else {
                 // If incorrect, prepare for next attempt
                 setTimeout(() => {
+                    this.isSubmitting = false;
                     this.spelledLetters = [];
                     this.updateSpelledDisplay();
                     this.renderLetters();
@@ -390,6 +399,7 @@ class SpellingApp {
                 }, 2000);
             }
         } else {
+            this.isSubmitting = false;
             this.showFeedback(false, 'Error saving. Please try again.');
         }
     }
