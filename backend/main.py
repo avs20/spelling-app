@@ -332,24 +332,31 @@ async def start_session(
     }
 
 @app.get("/api/next-word")
-async def next_word(user_id: int = Depends(get_current_user)):
+async def next_word(child_id: int = Query(...), user_id: int = Depends(get_current_user)):
     """
-    Phase 12: Get next word to practice (requires authentication)
-    Uses session queue if active, otherwise falls back to default behavior
+    Phase 13: Get next word for a specific child (requires authentication)
+    Uses child_progress table for per-child tracking
     Returns only words where next_review <= today
     Includes successful_days to determine mode (Learning vs Recall)
     """
     global current_session
     
-    # If no session active, get next available word
+    # Verify child belongs to this user
+    child = get_child_by_id(child_id)
+    if not child or child['user_id'] != user_id:
+        raise HTTPException(status_code=403, detail="Unauthorized access to this child")
+    
+    # If no session active, get next available word for this child
     if not current_session or not current_session.session_started:
-        word = get_word_for_practice()
-        if word:
+        words = get_words_for_child(child_id)
+        if words:
+            # Get first word from the list
+            word_data = words[0]
             return {
-                "id": word[0],
-                "word": word[1],
-                "category": word[2],
-                "successful_days": word[3],
+                "id": word_data['id'],
+                "word": word_data['word'],
+                "category": word_data['category'],
+                "successful_days": word_data['successful_days'],
                 "session": None
             }
         raise HTTPException(status_code=404, detail="No words available")
@@ -364,7 +371,7 @@ async def next_word(user_id: int = Depends(get_current_user)):
     if not word:
         raise HTTPException(status_code=404, detail="Word not found")
     
-    # Get word record for successful_days
+    # Get word record for successful_days from child_progress
     from database import get_db
     conn = get_db()
     cursor = conn.cursor()
@@ -426,9 +433,9 @@ async def submit_practice(
                 else:
                     current_session.mark_word_incorrect(word_id)
             
-            # Update word progress if correct
+            # Update word progress if correct (per-child tracking)
             if is_correct_bool:
-                update_word_on_success(word_id)
+                update_word_on_success_for_child(word_id, child_id)
         else:
             raise Exception("Word not found")
         

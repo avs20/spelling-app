@@ -269,7 +269,13 @@ class API {
 
     static async getNextWord() {
         try {
-            const response = await fetch(`${API_BASE}/next-word`, {
+            const childId = localStorage.getItem('selectedChildId');
+            if (!childId) {
+                console.error('No child selected');
+                return null;
+            }
+
+            const response = await fetch(`${API_BASE}/next-word?child_id=${childId}`, {
                 headers: getAuthHeaders()
             });
 
