@@ -27,6 +27,8 @@ class SpellingApp {
         this.spelledDisplay = document.getElementById('spelled-display');
         this.modeIndicator = document.getElementById('mode-indicator');
         this.feedbackMessage = document.getElementById('feedback-message');
+        this.mainContent = document.getElementById('main-content');
+        this.completionBanner = document.getElementById('completion-banner');
 
         this.undoBtn = document.getElementById('undo-btn');
         this.redoBtn = document.getElementById('redo-btn');
@@ -64,10 +66,11 @@ class SpellingApp {
         const wordData = await API.getNextWord();
 
         if (!wordData) {
-            this.wordDisplay.textContent = 'No words available';
+            this.showCompletionScreen();
             return;
         }
 
+        this.showMainContent();
         this.currentWord = wordData.word;
         this.currentWordId = wordData.id;
         this.successfulDays = wordData.successful_days || 0;  // Phase 4: Get from backend
@@ -83,6 +86,30 @@ class SpellingApp {
         this.clearFeedback();
         canvas.clear();
         this.updateUndoRedoButtons();
+    }
+
+    showCompletionScreen() {
+        /**
+         * Hide main content and show completion banner when no words available
+         */
+        if (this.mainContent) {
+            this.mainContent.style.display = 'none';
+        }
+        if (this.completionBanner) {
+            this.completionBanner.style.display = 'block';
+        }
+    }
+
+    showMainContent() {
+        /**
+         * Show main content and hide completion banner
+         */
+        if (this.mainContent) {
+            this.mainContent.style.display = 'flex';
+        }
+        if (this.completionBanner) {
+            this.completionBanner.style.display = 'none';
+        }
     }
 
     renderLetters() {

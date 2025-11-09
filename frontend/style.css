@@ -379,6 +379,40 @@ main {
     text-transform: none;
 }
 
+/* Completion Banner */
+.completion-banner {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    padding: 40px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    margin: 20px 0;
+    animation: slideInUp 0.6s ease-out;
+}
+
+.completion-banner h2 {
+    font-size: 2rem;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.completion-banner p {
+    font-size: 1.2rem;
+    opacity: 0.95;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 /* Submit Section */
 .submit-section {
     text-align: center;
