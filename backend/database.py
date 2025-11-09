@@ -423,3 +423,33 @@ def get_recent_drawings(limit=10):
         'is_correct': bool(d[2]),
         'practiced_date': d[3]
     } for d in drawings]
+
+def reset_db_to_initial():
+    """
+    Reset database to original state with only 3 initial words
+    Deletes all practices and user words, keeps only bee, spider, butterfly
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    today = date.today().isoformat()
+    
+    # Delete all practices
+    cursor.execute("DELETE FROM practices")
+    
+    # Delete all words
+    cursor.execute("DELETE FROM words")
+    
+    # Re-insert initial words
+    test_words = [
+        ("bee", "insects", 0, None, today),
+        ("spider", "insects", 0, None, today),
+        ("butterfly", "insects", 0, None, today)
+    ]
+    cursor.executemany(
+        "INSERT INTO words (word, category, successful_days, last_practiced, next_review) VALUES (?, ?, ?, ?, ?)",
+        test_words
+    )
+    
+    conn.commit()
+    conn.close()
+    return True

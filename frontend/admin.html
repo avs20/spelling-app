@@ -182,6 +182,18 @@
         .logout-btn {
             text-align: right;
             margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
         }
     </style>
 </head>
@@ -197,6 +209,7 @@
 
         <div class="admin-content" id="adminContent">
             <div class="logout-btn">
+                <button class="btn btn-warning" onclick="resetDatabase()">Reset DB to 3 Words</button>
                 <button class="btn btn-secondary" onclick="logout()">Logout</button>
             </div>
 
@@ -352,6 +365,30 @@
             } catch (error) {
                 console.error('Error:', error);
                 showMessage('Failed to delete word', 'error');
+            }
+        }
+
+        async function resetDatabase() {
+            if (!confirm('Are you sure you want to reset the database? This will delete all words and practice records, keeping only the 3 initial words (bee, spider, butterfly).')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/admin/reset-db`, {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(data.message, 'success');
+                    loadWords();
+                } else {
+                    showMessage(data.detail || 'Error resetting database', 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage('Failed to reset database', 'error');
             }
         }
     </script>

@@ -15,7 +15,7 @@ from database import (
     init_db, get_word_for_practice, save_practice, get_all_words, get_word_by_id,
     update_word_on_success, get_words_for_today, add_word, update_word, delete_word,
     get_all_words_admin, get_practice_stats, get_word_accuracy, get_practice_trend,
-    get_recent_drawings
+    get_recent_drawings, reset_db_to_initial
 )
 from data_management import (
     cleanup_old_drawings, get_storage_stats, optimize_database, create_backup
@@ -359,6 +359,20 @@ async def backup_data():
             return {"success": True, "filename": filename, "message": f"Backup created: {filename}"}
         else:
             raise HTTPException(status_code=500, detail="Backup failed")
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/reset-db")
+async def reset_database():
+    """Reset database to original state with only 3 initial words"""
+    try:
+        success = reset_db_to_initial()
+        if success:
+            return {"success": True, "message": "Database reset to initial state with 3 words"}
+        else:
+            raise HTTPException(status_code=500, detail="Reset failed")
     except Exception as e:
         import traceback
         traceback.print_exc()
