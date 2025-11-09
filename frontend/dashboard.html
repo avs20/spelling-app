@@ -296,10 +296,47 @@
         </div>
     </div>
 
+    <script src="api.js"></script>
     <script>
         const API_URL = window.location.hostname === 'localhost' 
             ? 'http://localhost:8000'
             : window.location.origin;
+
+        // Check auth on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            const token = getAuthToken();
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            const user = await API.getCurrentUser();
+            if (!user) {
+                window.location.href = '/login';
+                return;
+            }
+
+            // Add profile/logout links to header
+            const headerActions = document.querySelector('.header-actions');
+            if (headerActions) {
+                const links = document.createElement('div');
+                links.style.display = 'flex';
+                links.style.gap = '15px';
+                links.innerHTML = `
+                    <a href="/profile" style="color: #667eea; text-decoration: none; font-weight: bold;">Profile</a>
+                    <button onclick="logout()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">Logout</button>
+                `;
+                headerActions.appendChild(links);
+            }
+
+            loadDashboard();
+        });
+
+        function logout() {
+            clearAuthToken();
+            localStorage.removeItem('selectedChildId');
+            window.location.href = '/login';
+        }
 
         async function loadDashboard() {
             await Promise.all([
@@ -312,7 +349,15 @@
 
         async function loadStats() {
             try {
-                const response = await fetch(`${API_URL}/api/dashboard/stats`);
+                const response = await fetch(`${API_URL}/api/dashboard/stats`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
+                
                 const stats = await response.json();
 
                 document.getElementById('wordsToday').textContent = stats.words_today || 0;
@@ -326,7 +371,15 @@
 
         async function loadTrend() {
             try {
-                const response = await fetch(`${API_URL}/api/dashboard/trend?days=7`);
+                const response = await fetch(`${API_URL}/api/dashboard/trend?days=7`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
+                
                 const data = await response.json();
                 const trend = data.trend || [];
 
@@ -370,7 +423,15 @@
 
         async function loadWordAccuracy() {
             try {
-                const response = await fetch(`${API_URL}/api/dashboard/word-accuracy`);
+                const response = await fetch(`${API_URL}/api/dashboard/word-accuracy`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
+                
                 const data = await response.json();
                 const words = data.words || [];
 
@@ -408,7 +469,15 @@
 
         async function loadDrawings() {
             try {
-                const response = await fetch(`${API_URL}/api/dashboard/drawings?limit=20`);
+                const response = await fetch(`${API_URL}/api/dashboard/drawings?limit=20`, {
+                    headers: getAuthHeaders()
+                });
+                
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
+                
                 const data = await response.json();
                 const drawings = data.drawings || [];
 
@@ -445,7 +514,8 @@
             }
         }
 
-        loadDashboard();
+        // Trigger auth check
+        document.addEventListener('DOMContentLoaded', () => {});
     </script>
 </body>
 </html>

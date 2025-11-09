@@ -173,7 +173,11 @@
     <header>
     <h1>Learn & Draw</h1>
     <p id="word-display" class="word-title">Loading...</p>
-    </header>
+    <div style="position: absolute; top: 20px; right: 20px; font-size: 14px;">
+         <a href="/user-profile" style="color: #667eea; text-decoration: none; margin-right: 10px;">👤 Profile</a>
+         <button onclick="logout()" style="background: none; border: none; color: #667eea; cursor: pointer; text-decoration: underline;">Logout</button>
+     </div>
+     </header>
 
     <!-- Session Progress Indicator -->
     <div id="session-indicator" class="session-indicator" style="display: none;">
@@ -261,7 +265,20 @@
     <script src="/static/canvas.js"></script>
     <script src="/static/app.js"></script>
     <script>
-        // Phase 8: Dark Mode
+        // Phase 12: Auth check
+        async function ensureAuthenticated() {
+            const token = getAuthToken();
+            const childId = localStorage.getItem('selectedChildId');
+
+            if (!token || !childId) {
+                window.location.href = '/login';
+                return false;
+            }
+
+            return true;
+        }
+
+        // Phase 12: Dark Mode
         function toggleDarkMode() {
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
@@ -282,11 +299,21 @@
             const API_URL = window.location.hostname === 'localhost' 
                 ? 'http://localhost:8000'
                 : window.location.origin;
-            fetch(`${API_URL}/api/dashboard/stats`)
-                .then(res => res.json())
+            fetch(`${API_URL}/api/dashboard/stats`, {
+                headers: getAuthHeaders()
+            })
+                .then(res => {
+                    if (res.status === 401) {
+                        handleUnauthorized();
+                        return null;
+                    }
+                    return res.json();
+                })
                 .then(stats => {
-                    totalWordsLearned = stats.words_this_week || 0;
-                    document.getElementById('badge-text').textContent = `⭐ ${totalWordsLearned} words this week`;
+                    if (stats) {
+                        totalWordsLearned = stats.words_this_week || 0;
+                        document.getElementById('badge-text').textContent = `⭐ ${totalWordsLearned} words this week`;
+                    }
                 })
                 .catch(err => console.error('Error loading progress:', err));
         }
@@ -342,6 +369,17 @@
                 indicator.style.display = 'flex';
             }
         }
+
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                clearAuthToken();
+                localStorage.removeItem('selectedChildId');
+                window.location.href = '/login';
+            }
+        }
+
+        // Auth check on page load
+        window.addEventListener('load', ensureAuthenticated);
     </script>
 </body>
 </html>
