@@ -31,6 +31,7 @@ from models import (
     UserRegisterRequest, UserLoginRequest, UserResponse, TokenResponse,
     ChildCreateRequest, ChildUpdateRequest, ChildResponse, AddWordRequest, PracticeRequest
 )
+from migrate import migrate_to_latest
 
 app = FastAPI()
 
@@ -49,6 +50,8 @@ app.add_middleware(
 
 # Initialize database
 init_db()
+# Run migrations
+migrate_to_latest()
 
 # Global session state (per client session)
 current_session = None
