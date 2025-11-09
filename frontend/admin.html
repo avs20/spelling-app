@@ -109,21 +109,31 @@
         }
 
         .btn-danger {
-            background: #e74c3c;
+            background: #dc3545;
             color: white;
         }
 
         .btn-danger:hover {
-            background: #c0392b;
+            background: #c82333;
         }
 
-        .btn-secondary {
-            background: #95a5a6;
+        .btn-logout {
+            background: #888;
+            color: white;
+            float: right;
+        }
+
+        .btn-logout:hover {
+            background: #666;
+        }
+
+        .btn-reset {
+            background: #ff9800;
             color: white;
         }
 
-        .btn-secondary:hover {
-            background: #7f8c8d;
+        .btn-reset:hover {
+            background: #e68900;
         }
 
         .words-list {
@@ -131,18 +141,13 @@
         }
 
         .word-item {
-            background: white;
-            border: 2px solid #e0e0e0;
+            background: #f8f9fa;
             padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-        }
-
-        .word-info {
-            flex-grow: 1;
         }
 
         .word-info h3 {
@@ -152,7 +157,7 @@
 
         .word-info p {
             color: #666;
-            font-size: 14px;
+            font-size: 12px;
         }
 
         .word-actions {
@@ -164,7 +169,7 @@
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
-            text-align: center;
+            font-weight: bold;
         }
 
         .message.success {
@@ -179,95 +184,143 @@
             border: 1px solid #f5c6cb;
         }
 
-        .logout-btn {
-            text-align: right;
+        .auth-error {
+            color: #dc3545;
+            margin-top: 10px;
+        }
+
+        .back-link {
+            display: inline-block;
             margin-bottom: 20px;
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        h2 {
+            color: #333;
+            margin-top: 30px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ddd;
+            padding-bottom: 10px;
+        }
+
+        header {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 20px;
         }
 
-        .btn-warning {
-            background: #f39c12;
-            color: white;
-        }
-
-        .btn-warning:hover {
-            background: #e67e22;
+        header h1 {
+            margin-bottom: 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="auth-section" id="authSection">
-            <h1>🔒 Admin Access</h1>
-            <p style="margin-bottom: 20px;">Enter password to access word management</p>
-            <input type="password" id="passwordInput" placeholder="Password" />
-            <button onclick="authenticate()">Login</button>
-            <p id="authError" style="color: red; margin-top: 10px;"></p>
+        <header>
+            <h1>Admin - Word Management</h1>
+            <button class="btn btn-logout" onclick="logout()">Logout</button>
+        </header>
+
+        <!-- Auth Section (Phase 12: JWT-based) -->
+        <div id="authSection" class="auth-section">
+            <h2>Authentication Required</h2>
+            <p>You must be logged in to access this page.</p>
+            <a href="/login" class="btn btn-primary" style="text-decoration: none; display: inline-block;">Go to Login</a>
         </div>
 
-        <div class="admin-content" id="adminContent">
-            <div class="logout-btn">
-                <button class="btn btn-warning" onclick="resetDatabase()">Reset DB to 3 Words</button>
-                <button class="btn btn-secondary" onclick="logout()">Logout</button>
-            </div>
+        <!-- Admin Content -->
+        <div id="adminContent" class="admin-content">
+            <a href="/select-child" class="back-link">← Back to App</a>
 
-            <h1>📝 Word Management</h1>
-
+            <!-- Messages -->
             <div id="messageBox"></div>
 
+            <!-- Add Word Form -->
             <div class="add-word-form">
                 <h2>Add New Word</h2>
                 <form id="addWordForm" onsubmit="addWord(event)">
                     <div class="form-group">
-                        <label for="wordInput">Word:</label>
-                        <input type="text" id="wordInput" required />
+                        <label for="wordInput">Word</label>
+                        <input type="text" id="wordInput" required placeholder="e.g., elephant">
                     </div>
                     <div class="form-group">
-                        <label for="categoryInput">Category:</label>
-                        <input type="text" id="categoryInput" placeholder="e.g., insects, animals, colors" required />
+                        <label for="categoryInput">Category</label>
+                        <select id="categoryInput" required>
+                            <option value="">Select Category</option>
+                            <option value="insects">Insects</option>
+                            <option value="animals">Animals</option>
+                            <option value="fruits">Fruits</option>
+                            <option value="colors">Colors</option>
+                            <option value="numbers">Numbers</option>
+                            <option value="other">Other</option>
+                        </select>
                     </div>
                     <div class="form-group">
-                        <label for="referenceImage">Reference Image (optional):</label>
-                        <input type="file" id="referenceImage" accept="image/*" />
+                        <label for="referenceImage">Reference Image (optional)</label>
+                        <input type="file" id="referenceImage" accept="image/*">
                     </div>
                     <button type="submit" class="btn btn-primary">Add Word</button>
                 </form>
             </div>
 
+            <!-- Words List -->
             <div class="words-list">
                 <h2>All Words</h2>
-                <div id="wordsList"></div>
+                <div id="wordsList">
+                    <p>Loading words...</p>
+                </div>
+            </div>
+
+            <!-- Database Management -->
+            <div style="margin-top: 40px; padding: 20px; background: #fff3cd; border-radius: 8px;">
+                <h2 style="border-bottom: 2px solid #ffc107;">Database Management</h2>
+                <button class="btn btn-reset" onclick="resetDatabase()">Reset Database (Initial 3 Words)</button>
+                <p style="margin-top: 10px; font-size: 12px; color: #666;">Deletes all words and practice records, keeping only bee, spider, butterfly.</p>
             </div>
         </div>
     </div>
 
+    <script src="/static/api.js"></script>
     <script>
         const API_URL = window.location.hostname === 'localhost' 
             ? 'http://localhost:8000'
             : window.location.origin;
-        const ADMIN_PASSWORD = 'admin123';
 
-        function authenticate() {
-            const password = document.getElementById('passwordInput').value;
-            const authError = document.getElementById('authError');
+        // Phase 12: Auth check
+        async function ensureAuthenticated() {
+            const token = getAuthToken();
 
-            if (password === ADMIN_PASSWORD) {
-                document.getElementById('authSection').style.display = 'none';
-                document.getElementById('adminContent').style.display = 'block';
-                loadWords();
-            } else {
-                authError.textContent = 'Incorrect password';
+            if (!token) {
+                document.getElementById('authSection').style.display = 'block';
+                document.getElementById('adminContent').style.display = 'none';
+                return false;
             }
+
+            document.getElementById('authSection').style.display = 'none';
+            document.getElementById('adminContent').style.display = 'block';
+            return true;
         }
 
         function logout() {
-            document.getElementById('authSection').style.display = 'block';
-            document.getElementById('adminContent').style.display = 'none';
-            document.getElementById('passwordInput').value = '';
-            document.getElementById('authError').textContent = '';
+            if (confirm('Are you sure you want to logout?')) {
+                clearAuthToken();
+                localStorage.removeItem('selectedChildId');
+                window.location.href = '/login';
+            }
         }
+
+        window.addEventListener('load', async () => {
+            if (await ensureAuthenticated()) {
+                loadWords();
+            }
+        });
 
         function showMessage(message, type) {
             const messageBox = document.getElementById('messageBox');
@@ -294,6 +347,7 @@
             try {
                 const response = await fetch(`${API_URL}/api/admin/words`, {
                     method: 'POST',
+                    headers: getAuthHeaders(),
                     body: formData
                 });
 
@@ -314,7 +368,15 @@
 
         async function loadWords() {
             try {
-                const response = await fetch(`${API_URL}/api/admin/words`);
+                const response = await fetch(`${API_URL}/api/admin/words`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (response.status === 401) {
+                    handleUnauthorized();
+                    return;
+                }
+
                 const data = await response.json();
 
                 const wordsList = document.getElementById('wordsList');
@@ -351,7 +413,8 @@
 
             try {
                 const response = await fetch(`${API_URL}/api/admin/words/${wordId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
                 });
 
                 const data = await response.json();
@@ -375,7 +438,8 @@
 
             try {
                 const response = await fetch(`${API_URL}/api/admin/reset-db`, {
-                    method: 'POST'
+                    method: 'POST',
+                    headers: getAuthHeaders()
                 });
 
                 const data = await response.json();

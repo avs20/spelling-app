@@ -46,6 +46,38 @@ def event_loop():
 
 
 # ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
+
+async def register_user(page, email, password):
+    """Helper to register a new user and navigate to login page"""
+    await page.goto(f"{BASE_URL}/register.html")
+    await page.fill('input[name="email"]', email)
+    await page.fill('input[name="password"]', password)
+    await page.fill('input[name="confirm_password"]', password)
+    await page.click('button:has-text("Register")')
+    await page.wait_for_url("**/login.html")
+    # Wait for form to be ready
+    await page.wait_for_selector('input[name="email"]')
+
+
+async def perform_login(page, email, password):
+    """Helper to perform login and navigate to child selector"""
+    await page.fill('input[name="email"]', email)
+    await page.fill('input[name="password"]', password)
+    await page.click('button:has-text("Login")')
+    
+    # Wait for token to be saved (indicates successful login)
+    await page.wait_for_function(
+        'localStorage.getItem("authToken")',
+        timeout=5000
+    )
+    
+    # Navigate to child selector page
+    await page.goto(f"{BASE_URL}/select-child.html")
+
+
+# ============================================================================
 # TEST SUITE 1: USER REGISTRATION & LOGIN
 # ============================================================================
 
@@ -154,27 +186,14 @@ async def test_user_login_success():
             # Give the page a moment to fully load and reset state
             await page.wait_for_timeout(500)
             
-            # Now login - clear any previous values first
-            await page.fill('input[name="email"]', email)
-            await page.fill('input[name="password"]', password)
-            # Wait for login button to be visible
-            await page.wait_for_selector('button:has-text("Login")')
-            # Make sure button is enabled
-            await page.wait_for_function('() => !document.querySelector("button").disabled')
-            
-            await page.click('button:has-text("Login")')
-            
-            # Wait for token to be saved to localStorage (sign of successful login)
-            token = await page.wait_for_function(
-                'localStorage.getItem("token")',
-                timeout=5000
-            )
-            assert token is not None, "Token should be stored in localStorage"
-            
-            # Navigate to child selector page
-            # (The frontend JavaScript should do this automatically, but we ensure it happens)
-            await page.goto(f"{BASE_URL}/select-child.html")
+            # Now login
+            await page.wait_for_selector('input[name="email"]')  # Ensure form is ready
+            await perform_login(page, email, password)
             assert page.url.endswith("select-child.html"), "Should be on child selector page"
+            
+            # JWT token should be in localStorage
+            token = await page.evaluate('localStorage.getItem("authToken")')
+            assert token is not None, "Token should be stored in localStorage"
             
             await page.screenshot(path=f"{SCREENSHOTS_DIR}/{TIMESTAMP}_03_login_success.png")
             
@@ -247,24 +266,14 @@ async def test_create_child_profile():
             email = f"parent_{datetime.now().timestamp()}@test.com"
             password = "TestPass123!"
             
-            await page.goto(f"{BASE_URL}/register.html")
-            await page.fill('input[name="email"]', email)
-            await page.fill('input[name="password"]', password)
-            await page.fill('input[name="confirm_password"]', password)
-            await page.click('button:has-text("Register")')
-            
-            await page.wait_for_url("**/login.html")
-            await page.fill('input[name="email"]', email)
-            await page.fill('input[name="password"]', password)
-            await page.click('button:has-text("Login")')
-            
-            # Now on child selector
-            await page.wait_for_url("**/select-child.html", timeout=5000)
+            await register_user(page, email, password)
+            await perform_login(page, email, password)
             
             # Create child
-            await page.fill('input[name="child_name"]', "Emma")
-            await page.fill('input[name="child_age"]', "5")
-            await page.click('button:has-text("Create Child")')
+            await page.wait_for_selector('input#childName', timeout=5000)
+            await page.fill('input#childName', "Emma")
+            await page.fill('input#childAge', "5")
+            await page.click('button:has-text("Add Child")')
             
             # Child should appear in list
             await page.wait_for_timeout(1000)
@@ -296,16 +305,12 @@ async def test_select_child_and_access_app():
             await page.click('button:has-text("Register")')
             
             await page.wait_for_url("**/login.html")
-            await page.fill('input[name="email"]', email)
-            await page.fill('input[name="password"]', password)
-            await page.click('button:has-text("Login")')
-            
-            await page.wait_for_url("**/select-child.html", timeout=5000)
+            await perform_login(page, email, password)
             
             # Create child
-            await page.fill('input[name="child_name"]', "Lily")
-            await page.fill('input[name="child_age"]', "4")
-            await page.click('button:has-text("Create Child")')
+            await page.fill('input#childName', "Lily")
+            await page.fill('input#childAge', "4")
+            await page.click('button:has-text("Add Child")')
             
             await page.wait_for_timeout(1000)
             
@@ -345,17 +350,13 @@ async def test_multiple_children_selection():
             await page.click('button:has-text("Register")')
             
             await page.wait_for_url("**/login.html")
-            await page.fill('input[name="email"]', email)
-            await page.fill('input[name="password"]', password)
-            await page.click('button:has-text("Login")')
-            
-            await page.wait_for_url("**/select-child.html", timeout=5000)
+            await perform_login(page, email, password)
             
             # Create 3 children
             for i, name in enumerate(["Child1", "Child2", "Child3"]):
-                await page.fill('input[name="child_name"]', name)
-                await page.fill('input[name="child_age"]', str(3 + i))
-                await page.click('button:has-text("Create Child")')
+                await page.fill('input#childName', name)
+                await page.fill('input#childAge', str(3 + i))
+                await page.click('button:has-text("Add Child")')
                 await page.wait_for_timeout(500)
             
             # All children should be visible
@@ -388,16 +389,12 @@ async def test_delete_child():
             await page.click('button:has-text("Register")')
             
             await page.wait_for_url("**/login.html")
-            await page.fill('input[name="email"]', email)
-            await page.fill('input[name="password"]', password)
-            await page.click('button:has-text("Login")')
-            
-            await page.wait_for_url("**/select-child.html", timeout=5000)
+            await perform_login(page, email, password)
             
             # Create child
-            await page.fill('input[name="child_name"]', "ToDelete")
-            await page.fill('input[name="child_age"]', "5")
-            await page.click('button:has-text("Create Child")')
+            await page.fill('input#childName', "ToDelete")
+            await page.fill('input#childAge', "5")
+            await page.click('button:has-text("Add Child")')
             
             await page.wait_for_timeout(1000)
             
@@ -447,11 +444,11 @@ async def test_data_isolation_between_users():
         await page1.click('button:has-text("Login")')
         
         await page1.wait_for_url("**/select-child.html", timeout=5000)
-        await page1.fill('input[name="child_name"]', "User1Child")
-        await page1.fill('input[name="child_age"]', "5")
-        await page1.click('button:has-text("Create Child")')
+        await page1.fill('input#childName', "User1Child")
+        await page1.fill('input#childAge', "5")
+        await page1.click('button:has-text("Add Child")')
         
-        user1_token = await page1.evaluate('localStorage.getItem("token")')
+        user1_token = await page1.evaluate('localStorage.getItem("authToken")')
         
         # User 2 creates a different child
         page2 = await browser.new_page()
@@ -476,9 +473,9 @@ async def test_data_isolation_between_users():
         assert user1_child_text is None, "User 2 should not see User 1's child"
         
         # User 2 creates their own child
-        await page2.fill('input[name="child_name"]', "User2Child")
-        await page2.fill('input[name="child_age"]', "4")
-        await page2.click('button:has-text("Create Child")')
+        await page2.fill('input#childName', "User2Child")
+        await page2.fill('input#childAge', "4")
+        await page2.click('button:has-text("Add Child")')
         
         await page2.wait_for_timeout(1000)
         
@@ -518,19 +515,15 @@ async def test_token_persistence_across_reload():
             await page.click('button:has-text("Register")')
             
             await page.wait_for_url("**/login.html")
-            await page.fill('input[name="email"]', email)
-            await page.fill('input[name="password"]', password)
-            await page.click('button:has-text("Login")')
+            await perform_login(page, email, password)
             
-            await page.wait_for_url("**/select-child.html", timeout=5000)
-            
-            token_before = await page.evaluate('localStorage.getItem("token")')
+            token_before = await page.evaluate('localStorage.getItem("authToken")')
             assert token_before is not None, "Token should be stored"
             
             # Reload page
             await page.reload()
             
-            token_after = await page.evaluate('localStorage.getItem("token")')
+            token_after = await page.evaluate('localStorage.getItem("authToken")')
             assert token_before == token_after, "Token should persist across reload"
             assert token_after is not None, "Token should still exist"
             
@@ -586,11 +579,7 @@ async def test_user_profile_page_access():
             await page.click('button:has-text("Register")')
             
             await page.wait_for_url("**/login.html")
-            await page.fill('input[name="email"]', email)
-            await page.fill('input[name="password"]', password)
-            await page.click('button:has-text("Login")')
-            
-            await page.wait_for_url("**/select-child.html", timeout=5000)
+            await perform_login(page, email, password)
             
             # Navigate to profile
             await page.goto(f"{BASE_URL}/user-profile.html")
@@ -624,13 +613,9 @@ async def test_logout_clears_token():
             await page.click('button:has-text("Register")')
             
             await page.wait_for_url("**/login.html")
-            await page.fill('input[name="email"]', email)
-            await page.fill('input[name="password"]', password)
-            await page.click('button:has-text("Login")')
+            await perform_login(page, email, password)
             
-            await page.wait_for_url("**/select-child.html", timeout=5000)
-            
-            token_before = await page.evaluate('localStorage.getItem("token")')
+            token_before = await page.evaluate('localStorage.getItem("authToken")')
             assert token_before is not None
             
             # Click logout (button location depends on implementation)
@@ -644,7 +629,7 @@ async def test_logout_clears_token():
             
             # Token should be cleared
             await page.wait_for_timeout(1000)
-            token_after = await page.evaluate('localStorage.getItem("token")')
+            token_after = await page.evaluate('localStorage.getItem("authToken")')
             assert token_after is None, "Token should be cleared on logout"
             
             # Should redirect to login
@@ -747,9 +732,9 @@ async def test_complete_signup_to_app_flow():
             await page.wait_for_url("**/select-child.html", timeout=5000)
             
             # Step 5: Create and select child
-            await page.fill('input[name="child_name"]', "TestChild")
-            await page.fill('input[name="child_age"]', "5")
-            await page.click('button:has-text("Create Child")')
+            await page.fill('input#childName', "TestChild")
+            await page.fill('input#childAge', "5")
+            await page.click('button:has-text("Add Child")')
             
             await page.wait_for_timeout(1000)
             await page.click('button:has-text("Select TestChild")')
@@ -786,21 +771,17 @@ async def test_switch_between_children():
             await page.click('button:has-text("Register")')
             
             await page.wait_for_url("**/login.html")
-            await page.fill('input[name="email"]', email)
-            await page.fill('input[name="password"]', password)
-            await page.click('button:has-text("Login")')
-            
-            await page.wait_for_url("**/select-child.html", timeout=5000)
+            await perform_login(page, email, password)
             
             # Create 2 children
-            await page.fill('input[name="child_name"]', "Child_A")
-            await page.fill('input[name="child_age"]', "4")
-            await page.click('button:has-text("Create Child")')
+            await page.fill('input#childName', "Child_A")
+            await page.fill('input#childAge', "4")
+            await page.click('button:has-text("Add Child")')
             await page.wait_for_timeout(500)
             
-            await page.fill('input[name="child_name"]', "Child_B")
-            await page.fill('input[name="child_age"]', "5")
-            await page.click('button:has-text("Create Child")')
+            await page.fill('input#childName', "Child_B")
+            await page.fill('input#childAge', "5")
+            await page.click('button:has-text("Add Child")')
             await page.wait_for_timeout(500)
             
             # Select Child A
@@ -906,16 +887,12 @@ async def test_child_age_validation():
             await page.click('button:has-text("Register")')
             
             await page.wait_for_url("**/login.html")
-            await page.fill('input[name="email"]', email)
-            await page.fill('input[name="password"]', password)
-            await page.click('button:has-text("Login")')
-            
-            await page.wait_for_url("**/select-child.html", timeout=5000)
+            await perform_login(page, email, password)
             
             # Try invalid age
-            await page.fill('input[name="child_name"]', "Child")
-            await page.fill('input[name="child_age"]', "invalid")
-            await page.click('button:has-text("Create Child")')
+            await page.fill('input#childName', "Child")
+            await page.fill('input#childAge', "invalid")
+            await page.click('button:has-text("Add Child")')
             
             # Should show error or reject
             await page.wait_for_timeout(500)
@@ -943,16 +920,12 @@ async def test_empty_child_name():
             await page.click('button:has-text("Register")')
             
             await page.wait_for_url("**/login.html")
-            await page.fill('input[name="email"]', email)
-            await page.fill('input[name="password"]', password)
-            await page.click('button:has-text("Login")')
-            
-            await page.wait_for_url("**/select-child.html", timeout=5000)
+            await perform_login(page, email, password)
             
             # Try empty name
-            await page.fill('input[name="child_name"]', "")
-            await page.fill('input[name="child_age"]', "5")
-            await page.click('button:has-text("Create Child")')
+            await page.fill('input#childName', "")
+            await page.fill('input#childAge', "5")
+            await page.click('button:has-text("Add Child")')
             
             # Should reject
             await page.wait_for_timeout(500)
