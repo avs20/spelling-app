@@ -154,7 +154,10 @@
         let totalWordsLearned = 0;
 
         function updateProgressBadge() {
-            fetch('http://localhost:8000/api/dashboard/stats')
+            const API_URL = window.location.hostname === 'localhost' 
+                ? 'http://localhost:8000'
+                : window.location.origin;
+            fetch(`${API_URL}/api/dashboard/stats`)
                 .then(res => res.json())
                 .then(stats => {
                     totalWordsLearned = stats.words_this_week || 0;

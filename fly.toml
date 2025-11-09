@@ -1,6 +1,6 @@
 # fly.toml - Fly.io deployment configuration
-app = "spelling-app"
-primary_region = "sjc"  # San Jose - closest to you, change as needed
+app = "spelling-drawing-app"
+primary_region = "sjc"
 
 [build]
   dockerfile = "Dockerfile"
@@ -14,7 +14,7 @@ primary_region = "sjc"  # San Jose - closest to you, change as needed
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
-  min_machines_running = 0  # Free tier optimization
+  min_machines_running = 0
 
 [[vm]]
   cpu_kind = "shared"

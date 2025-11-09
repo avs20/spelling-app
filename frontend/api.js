@@ -3,7 +3,9 @@
  * Handles all backend API calls
  */
 
-const API_BASE = 'http://localhost:8000/api';
+const API_BASE = window.location.hostname === 'localhost' 
+    ? 'http://localhost:8000/api'
+    : `${window.location.origin}/api`;
 
 class API {
     static async checkHealth() {

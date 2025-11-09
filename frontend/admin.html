@@ -231,7 +231,9 @@
     </div>
 
     <script>
-        const API_URL = 'http://localhost:8000';
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8000'
+            : window.location.origin;
         const ADMIN_PASSWORD = 'admin123';
 
         function authenticate() {

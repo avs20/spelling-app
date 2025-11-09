@@ -26,7 +26,11 @@ app = FastAPI()
 # Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
+    allow_origins=[
+        "http://localhost:8002",
+        "https://spelling-drawing-app.fly.dev",
+        "*"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,6 +44,24 @@ app.mount("/static", StaticFiles(directory="../frontend"), name="static")
 
 # Serve drawings
 app.mount("/drawings", StaticFiles(directory="../data/drawings"), name="drawings")
+
+# Serve root and frontend pages
+from fastapi.responses import FileResponse
+
+@app.get("/")
+async def root():
+    """Serve main app page"""
+    return FileResponse("../frontend/index.html")
+
+@app.get("/admin")
+async def admin():
+    """Serve admin page"""
+    return FileResponse("../frontend/admin.html")
+
+@app.get("/dashboard")
+async def dashboard():
+    """Serve dashboard page"""
+    return FileResponse("../frontend/dashboard.html")
 
 # Request/Response models
 class WordResponse(BaseModel):
