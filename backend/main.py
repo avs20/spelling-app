@@ -4,7 +4,7 @@ Phase 1: MVP - Core Canvas & Basic Spelling
 Phase 12: Multi-user and multi-child support
 """
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Depends, Header
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Depends, Header, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -269,8 +269,8 @@ async def get_todays_words():
 
 @app.post("/api/session/start")
 async def start_session(
-    num_words: int = None,
-    child_id: int = None,
+    num_words: int = Query(None),
+    child_id: int = Query(None),
     user_id: int = Depends(get_current_user)
 ):
     """
