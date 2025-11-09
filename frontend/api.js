@@ -293,6 +293,12 @@ class API {
             formData.append('spelled_word', spelledWord);
             formData.append('drawing', drawingBlob, 'drawing.png');
             formData.append('is_correct', isCorrect.toString());
+            
+            // Add child_id from localStorage
+            const childId = localStorage.getItem('selectedChildId');
+            if (childId) {
+                formData.append('child_id', childId);
+            }
 
             const response = await fetch(`${API_BASE}/practice`, {
                 method: 'POST',

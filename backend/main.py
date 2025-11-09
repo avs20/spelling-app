@@ -383,6 +383,7 @@ async def submit_practice(
     spelled_word: str = Form(...),
     drawing: UploadFile = File(...),
     is_correct: str = Form(...),
+    child_id: int = Form(...),
     user_id: int = Depends(get_current_user)
 ):
     """
@@ -408,11 +409,6 @@ async def submit_practice(
         if word_data:
             # Convert string 'true'/'false' to boolean
             is_correct_bool = is_correct.lower() == 'true'
-            
-            # Get child_id from session
-            child_id = current_session.child_id if current_session else None
-            if not child_id:
-                raise Exception("No child selected for practice session")
             
             save_practice(word_id, child_id, spelled_word, is_correct_bool, filename)
             
