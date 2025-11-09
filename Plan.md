@@ -345,3 +345,244 @@ After **unsuccessful practice**:
 - ✓ No browser console errors from missing assets
 - ✓ All tests passing
 - ✓ Production deployment working smoothly
+
+---
+
+## **PHASE 12: Multi-User & Multi-Child Support (Week 6-7)** In Progress
+**Goal:** Add user accounts, child profiles, and complete data isolation.
+
+**Current State:**
+- Single global database with no user/child distinction
+- All progress visible to anyone on internet
+- No authentication except hardcoded admin password
+- No way to restrict access to dashboards
+
+**Database Changes Needed:**
+- Create `users` table (id, email, password_hash, created_date)
+- Create `children` table (id, user_id, name, age, created_date)
+- Add `child_id` foreign key to `practices` and `words` tables (or make words per-child)
+- Add `user_id` to admin records for tracking who created words
+- Decide: shared word list per family vs global word list?
+
+**Authentication System:**
+- Password hashing (bcrypt or similar)
+- JWT tokens for API access
+- Session management (token expiry: 24 hours)
+- Refresh token strategy
+- Password reset flow
+
+**API Changes:**
+- `POST /api/auth/register` - Create parent account
+- `POST /api/auth/login` - Login and get JWT token
+- `POST /api/auth/logout` - Invalidate session
+- `GET /api/auth/me` - Get current user info
+- Middleware to verify JWT on protected endpoints
+- `POST /api/children` - Create child profile
+- `GET /api/children` - List user's children
+- `PUT /api/children/{child_id}` - Update child
+- `DELETE /api/children/{child_id}` - Delete child
+- All practice/word endpoints now require `child_id` parameter
+
+**Frontend Changes:**
+- Login page (`login.html`)
+- Register page (`register.html`)
+- Child selector UI (after login)
+- Store JWT token in localStorage
+- Include Authorization header in all API calls
+- Redirect to login if token invalid
+- User profile page with child management
+
+**Access Control:**
+- `/admin` only accessible to logged-in user
+- `/dashboard` only shows logged-in user's data
+- `/` (main app) only accessible after selecting a child
+- All API endpoints require valid JWT + correct child_id
+
+**Implementation Order:**
+1. Database schema migration
+2. Auth endpoints (register, login, logout)
+3. JWT middleware
+4. Child management endpoints
+5. Update all existing endpoints to require auth
+6. Frontend: login/register pages
+7. Frontend: child selector
+8. Frontend: update all API calls
+9. Data migration strategy for existing data
+10. Testing (auth flows, access control, isolation)
+
+**Migration Strategy for Existing Data:**
+- Create default parent account or import option
+- Allow parent to import existing practice data to a child
+- Option to reset and start fresh with new setup
+
+**Decisions Made:**
+- ✓ Hybrid word model: Core words (global) + family custom words (private)
+- ✓ No account sharing for now (one parent per account)
+- ✓ Keep admin interface, update to manage family/child data
+- Skip public profiles for now (data always private)
+
+**Word List Architecture (Hybrid):**
+- Core words table: "bee", "spider", "butterfly" (global, shared by all families)
+- Family custom words: parents add words visible only to their children
+- Add `user_id` to words table (NULL = core/global, set = family-owned)
+- Practices always tied to specific child (private)
+- When getting words for a child: show core words + their family's custom words
+
+**Implementation Details:**
+- Modify `words` table: add `user_id` column (nullable)
+- Core words created during init with `user_id = NULL`
+- When parent adds word via `/api/admin/words`: set `user_id = current_user_id`
+- Get words endpoint filters: `WHERE user_id IS NULL OR user_id = current_user_id`
+- Delete word: parent can only delete their own words, not core words
+- Admin interface: show core words (read-only) + family's custom words (edit/delete)
+
+**Updated Admin Interface:**
+- Show family/child selector at top
+- Display core words (locked, can't delete)
+- Display family's custom words (can edit/delete)
+- Add word form adds to current family only
+- Access control: parent can only manage their own family's words
+
+---
+
+## **PHASE 12 - Files to Create & Modify**
+
+**Backend - Database (backend/database.py):**
+- Modify: Add `users` table schema
+- Modify: Add `children` table schema
+- Modify: Add `user_id` column to `words` table (nullable)
+- Modify: Add `child_id` column to `practices` table
+- Modify: Update all queries to filter by user/child
+- Add: `create_user()`, `get_user_by_email()`, `verify_password()`, `hash_password()`
+- Add: `create_child()`, `get_user_children()`, `get_child_by_id()`
+- Add: `get_words_for_child()` (core words + family's custom words)
+- Add: Migration function to add new columns to existing tables
+
+**Backend - Authentication (backend/auth.py) - NEW FILE:**
+- JWT configuration (secret key, algorithm, expiry)
+- `hash_password()` - bcrypt hash
+- `verify_password()` - bcrypt verify
+- `create_access_token()` - generate JWT
+- `verify_token()` - decode and validate JWT
+- `get_current_user()` - FastAPI dependency for protected routes
+
+**Backend - Models (backend/models.py) - NEW FILE:**
+- `UserRegisterRequest` - email, password
+- `UserLoginRequest` - email, password
+- `UserResponse` - user info (no password)
+- `ChildCreateRequest` - name, age
+- `ChildResponse` - child info with parent
+- `WordResponse` - updated with user_id
+- `PracticeRequest` - updated with child_id
+
+**Backend - Main (backend/main.py):**
+- Modify: Add JWT middleware to verify tokens
+- Modify: Update all endpoints to require auth
+- Modify: Add `child_id` parameter to practice/word endpoints
+- Add: `POST /api/auth/register` - create parent account
+- Add: `POST /api/auth/login` - login and get JWT token
+- Add: `POST /api/auth/logout` - logout (client-side token removal)
+- Add: `GET /api/auth/me` - get current user
+- Add: `POST /api/children` - create child
+- Add: `GET /api/children` - list user's children
+- Add: `PUT /api/children/{child_id}` - update child
+- Add: `DELETE /api/children/{child_id}` - delete child
+- Modify: `/api/next-word` - add child_id filter
+- Modify: `/api/practice` - require auth, filter by child_id
+- Modify: `/api/admin/words` - require auth, set user_id
+- Modify: All dashboard endpoints - require auth, filter by user
+- Remove: Old hardcoded admin password auth
+
+**Backend - Requirements (backend/requirements.txt):**
+- Add: `bcrypt>=4.0.0`
+- Add: `python-jose[cryptography]>=3.3.0`
+- Add: `pydantic-settings>=2.0.0`
+
+**Backend - Migration (backend/migrate.py) - NEW FILE:**
+- Run database schema migrations
+- Add users/children tables
+- Add user_id/child_id columns
+- Handle existing data (create default user or prompt)
+- Called once on startup
+
+**Frontend - Login Page (frontend/login.html) - NEW FILE:**
+- Email + password form
+- Register link
+- Submit to `/api/auth/login`
+- Store JWT in localStorage
+- Redirect to child selector on success
+
+**Frontend - Register Page (frontend/register.html) - NEW FILE:**
+- Email + password + confirm password form
+- Login link
+- Submit to `/api/auth/register`
+- Validate passwords match
+- Redirect to login on success
+
+**Frontend - Child Selector (frontend/select-child.html) - NEW FILE:**
+- List user's children
+- Select child button
+- "Create new child" form
+- Store selected child_id in localStorage
+- Redirect to main app (/) on selection
+
+**Frontend - User Profile (frontend/user-profile.html) - NEW FILE:**
+- Show logged-in user email
+- List children with edit/delete buttons
+- Create child form
+- Logout button
+- Access from main app
+
+**Frontend - Main App (frontend/index.html):**
+- Modify: Check for JWT token on load, redirect to login if missing
+- Modify: Check for selected child_id, redirect to child selector if missing
+- Modify: Add user profile link (top right)
+- Modify: Add logout button
+- Modify: Show current child name in UI
+
+**Frontend - API Utilities (frontend/api.js):**
+- Modify: Add `setAuthToken()` to store JWT
+- Modify: Add `getAuthToken()` to retrieve JWT
+- Modify: Add `clearAuthToken()` to logout
+- Modify: Add Authorization header to all API calls: `Authorization: Bearer {token}`
+- Modify: Add `child_id` parameter to all practice/word API calls
+- Modify: Handle 401 errors - redirect to login
+- Add: `login(email, password)` - POST /api/auth/login
+- Add: `register(email, password)` - POST /api/auth/register
+- Add: `getCurrentUser()` - GET /api/auth/me
+- Add: `createChild(name, age)` - POST /api/children
+- Add: `getChildren()` - GET /api/children
+- Add: `updateChild(child_id, name, age)` - PUT /api/children/{child_id}
+- Add: `deleteChild(child_id)` - DELETE /api/children/{child_id}
+
+**Frontend - Admin Page (frontend/admin.html):**
+- Modify: Add child/family selector at top
+- Modify: Show core words as read-only section
+- Modify: Show family custom words with edit/delete buttons
+- Modify: Add word form only adds to family
+- Modify: Restrict access to logged-in parent
+- Modify: Update all API calls to include auth header
+
+**Frontend - Dashboard (frontend/dashboard.html):**
+- Modify: Add logout button
+- Modify: Show only logged-in user's children data
+- Modify: Add child selector (view different child's stats)
+- Modify: Filter all stats by selected child_id
+- Modify: Restrict access to logged-in parent
+
+**Frontend - App Logic (frontend/app.js):**
+- Modify: Add auth check on page load
+- Modify: Redirect to login if no token
+- Modify: Add child selection on startup
+- Modify: Pass child_id to all API calls
+- Add: `ensureAuthenticated()` - check token validity
+- Add: `ensureChildSelected()` - check child_id selected
+- Add: Redirect handlers for auth failures
+
+---
+
+**Summary of Changes:**
+- **New files:** 8 (2 backend, 6 frontend)
+- **Modified files:** 9 (5 backend, 4 frontend)
+- **Core changes:** Database schema, auth system, child selection flow, API protection
+- **Breaking changes:** All endpoints now require authentication
