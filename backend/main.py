@@ -128,7 +128,7 @@ async def next_word():
             "category": word[2],
             "successful_days": word[3]
         }
-    return {"error": "No words available"}, 404
+    raise HTTPException(status_code=404, detail="No words available")
 
 @app.post("/api/practice")
 async def submit_practice(
