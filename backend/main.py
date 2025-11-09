@@ -271,9 +271,10 @@ async def get_todays_words():
     return {"words": words}
 
 @app.post("/api/session/start")
-async def start_session(num_words: int = None):
+async def start_session(num_words: int = None, user_id: int = Depends(get_current_user)):
     """
-    Start a new practice session with optional word limit
+    Phase 12: Start a new practice session with optional word limit
+    Requires authentication and child_id in localStorage on frontend
     
     Args:
         num_words: Limit session to N words (None = all available)
@@ -317,9 +318,9 @@ async def start_session(num_words: int = None):
     }
 
 @app.get("/api/next-word")
-async def next_word():
+async def next_word(user_id: int = Depends(get_current_user)):
     """
-    Get next word to practice
+    Phase 12: Get next word to practice (requires authentication)
     Uses session queue if active, otherwise falls back to default behavior
     Returns only words where next_review <= today
     Includes successful_days to determine mode (Learning vs Recall)
@@ -374,9 +375,12 @@ async def submit_practice(
     word_id: int = Form(...),
     spelled_word: str = Form(...),
     drawing: UploadFile = File(...),
-    is_correct: str = Form(...)
+    is_correct: str = Form(...),
+    user_id: int = Depends(get_current_user)
 ):
-    """Submit practice: save drawing + spelling"""
+    """
+    Phase 12: Submit practice - save drawing + spelling (requires authentication)
+    """
     global current_session
     
     try:
