@@ -443,12 +443,21 @@ main {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    header {
+        margin-bottom: 80px;
+    }
+
     header h1 {
         font-size: 2rem;
     }
 
     .word-title {
         font-size: 1.5rem;
+    }
+
+    .canvas-toolbar {
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
     .toolbar-btn {
@@ -474,6 +483,10 @@ main {
         padding: 10px;
     }
 
+    header {
+        margin-bottom: 70px;
+    }
+
     header h1 {
         font-size: 1.5rem;
     }
@@ -485,6 +498,11 @@ main {
     .canvas-section,
     .input-section {
         padding: 10px;
+    }
+
+    .canvas-toolbar {
+        flex-wrap: wrap;
+        gap: 6px;
     }
 
     .toolbar-btn {
