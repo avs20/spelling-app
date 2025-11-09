@@ -338,7 +338,11 @@
                     return;
                 }
 
-                const response = await fetch('/api/auth/me', {
+                const apiBase = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8000/api'
+                    : `${window.location.origin}/api`;
+
+                const response = await fetch(`${apiBase}/auth/me`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -363,7 +367,11 @@
             try {
                 const token = localStorage.getItem('authToken');
 
-                const response = await fetch('/api/children', {
+                const apiBase = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8000/api'
+                    : `${window.location.origin}/api`;
+
+                const response = await fetch(`${apiBase}/children`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -425,7 +433,10 @@
 
             try {
                 const token = localStorage.getItem('authToken');
-                const response = await fetch(`/api/children/${editingChildId}`, {
+                const apiBase = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8000/api'
+                    : `${window.location.origin}/api`;
+                const response = await fetch(`${apiBase}/children/${editingChildId}`, {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -454,7 +465,10 @@
 
             try {
                 const token = localStorage.getItem('authToken');
-                const response = await fetch(`/api/children/${childId}`, {
+                const apiBase = window.location.hostname === 'localhost' 
+                    ? 'http://localhost:8000/api'
+                    : `${window.location.origin}/api`;
+                const response = await fetch(`${apiBase}/children/${childId}`, {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`
