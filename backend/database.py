@@ -24,6 +24,10 @@ def get_db():
 
 def init_db():
     """Initialize database with tables"""
+    # Ensure database directory exists
+    db_dir = os.path.dirname(os.path.abspath(DB_PATH))
+    os.makedirs(db_dir, exist_ok=True)
+    
     conn = get_db()
     cursor = conn.cursor()
     
@@ -80,6 +84,23 @@ def init_db():
             practiced_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (word_id) REFERENCES words(id),
             FOREIGN KEY (child_id) REFERENCES children(id)
+        )
+    """)
+    
+    # Child Progress table - Phase 13: Per-child word progress tracking
+    # Tracks successful_days per child to fix multi-child isolation bug
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS child_progress (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            child_id INTEGER NOT NULL,
+            word_id INTEGER NOT NULL,
+            successful_days INTEGER DEFAULT 0,
+            last_practiced DATE,
+            next_review DATE,
+            created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (child_id) REFERENCES children(id),
+            FOREIGN KEY (word_id) REFERENCES words(id),
+            UNIQUE(child_id, word_id)
         )
     """)
     
@@ -619,8 +640,9 @@ def delete_child(child_id: int) -> bool:
 
 def get_words_for_child(child_id: int):
     """
-    Phase 12: Get words available for child
+    Phase 13: Get words available for child with per-child progress
     Returns core words (user_id IS NULL) + family's custom words
+    Uses child_progress table for per-child successful_days tracking
     """
     conn = get_db()
     cursor = conn.cursor()
@@ -635,14 +657,22 @@ def get_words_for_child(child_id: int):
     user_id = result[0]
     today = date.today().isoformat()
     
-    # Get core words + family's custom words, ready for today
+    # Get core words + family's custom words with per-child progress
+    # Use child_progress table for successful_days, defaulting to 0 if no entry exists
     cursor.execute("""
-        SELECT id, word, category, successful_days, user_id
-        FROM words
-        WHERE (user_id IS NULL OR user_id = ?)
-        AND next_review <= ?
+        SELECT 
+            w.id, 
+            w.word, 
+            w.category, 
+            COALESCE(cp.successful_days, 0) as successful_days,
+            w.user_id,
+            COALESCE(cp.next_review, w.next_review) as next_review
+        FROM words w
+        LEFT JOIN child_progress cp ON w.id = cp.word_id AND cp.child_id = ?
+        WHERE (w.user_id IS NULL OR w.user_id = ?)
+        AND COALESCE(cp.next_review, w.next_review) <= ?
         ORDER BY RANDOM()
-    """, (user_id, today))
+    """, (child_id, user_id, today))
     
     words = cursor.fetchall()
     conn.close()
@@ -650,8 +680,8 @@ def get_words_for_child(child_id: int):
 
 def update_word_on_success_for_child(word_id: int, child_id: int):
     """
-    Phase 12: Update word progress after successful practice for a child
-    Same logic as before, but child_id is tracked
+    Phase 13: Update word progress after successful practice for a child
+    Updates child_progress table for per-child tracking
     """
     conn = get_db()
     cursor = conn.cursor()
@@ -666,20 +696,25 @@ def update_word_on_success_for_child(word_id: int, child_id: int):
         conn.close()
         return False
     
-    # Get current word data
-    cursor.execute("SELECT successful_days, last_practiced FROM words WHERE id = ?", (word_id,))
+    # Check if child_progress record exists for this child/word
+    cursor.execute("""
+        SELECT successful_days, last_practiced FROM child_progress 
+        WHERE child_id = ? AND word_id = ?
+    """, (child_id, word_id))
     row = cursor.fetchone()
     
-    if not row:
-        conn.close()
-        return False
-    
-    current_successful_days, last_practiced = row
-    
-    # Only increment if not already practiced today
-    if last_practiced == today:
-        conn.close()
-        return False
+    if row:
+        # Record exists
+        current_successful_days, last_practiced = row
+        
+        # Only increment if not already practiced today
+        if last_practiced == today:
+            conn.close()
+            return False
+    else:
+        # No record yet, create one
+        current_successful_days = 0
+        last_practiced = None
     
     # Increment successful_days
     new_successful_days = current_successful_days + 1
@@ -692,12 +727,20 @@ def update_word_on_success_for_child(word_id: int, child_id: int):
     else:
         next_review = (date.today() + timedelta(days=1)).isoformat()
     
-    # Update word record
-    cursor.execute("""
-        UPDATE words
-        SET successful_days = ?, last_practiced = ?, next_review = ?
-        WHERE id = ?
-    """, (new_successful_days, today, next_review, word_id))
+    # Insert or update child_progress record
+    if row:
+        # Update existing record
+        cursor.execute("""
+            UPDATE child_progress
+            SET successful_days = ?, last_practiced = ?, next_review = ?
+            WHERE child_id = ? AND word_id = ?
+        """, (new_successful_days, today, next_review, child_id, word_id))
+    else:
+        # Insert new record
+        cursor.execute("""
+            INSERT INTO child_progress (child_id, word_id, successful_days, last_practiced, next_review)
+            VALUES (?, ?, ?, ?, ?)
+        """, (child_id, word_id, new_successful_days, today, next_review))
     
     conn.commit()
     conn.close()
