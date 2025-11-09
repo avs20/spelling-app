@@ -46,7 +46,6 @@ BASE_DIR = '/app' if IS_DOCKER else os.path.dirname(os.path.dirname(os.path.absp
 
 # Serve frontend files
 frontend_dir = os.path.join(BASE_DIR, 'frontend')
-app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 
 # Serve drawings
 drawings_dir = os.path.join(BASE_DIR, 'data', 'drawings')
@@ -56,20 +55,24 @@ app.mount("/drawings", StaticFiles(directory=drawings_dir), name="drawings")
 # Serve root and frontend pages
 from fastapi.responses import FileResponse
 
+# Serve static files (CSS, JS, images, etc.) - must be mounted BEFORE specific routes
+app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+
+# Define specific routes for HTML pages  
 @app.get("/")
 async def root():
     """Serve main app page"""
-    return FileResponse(os.path.join(frontend_dir, "index.html"))
+    return FileResponse(os.path.join(frontend_dir, "index.html"), media_type="text/html")
 
 @app.get("/admin")
 async def admin():
     """Serve admin page"""
-    return FileResponse(os.path.join(frontend_dir, "admin.html"))
+    return FileResponse(os.path.join(frontend_dir, "admin.html"), media_type="text/html")
 
 @app.get("/dashboard")
 async def dashboard():
     """Serve dashboard page"""
-    return FileResponse(os.path.join(frontend_dir, "dashboard.html"))
+    return FileResponse(os.path.join(frontend_dir, "dashboard.html"), media_type="text/html")
 
 # Request/Response models
 class WordResponse(BaseModel):
@@ -360,6 +363,8 @@ async def backup_data():
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
 
 if __name__ == "__main__":
     import uvicorn
