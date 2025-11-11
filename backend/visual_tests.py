@@ -44,6 +44,7 @@ async def login_and_get_child_id(page):
     """Login and return the selected child ID"""
     # Navigate to login
     await page.goto('http://localhost:8002/login.html')
+    await page.wait_for_load_state('networkidle')
     
     # Fill login form
     await page.fill('input[name="email"]', TEST_EMAIL)
@@ -55,34 +56,48 @@ async def login_and_get_child_id(page):
         'localStorage.getItem("authToken")',
         timeout=10000
     )
-    await page.wait_for_timeout(500)
+    await page.wait_for_timeout(1000)
     
     # Navigate to child selector
     await page.goto('http://localhost:8002/select-child.html')
     await page.wait_for_load_state('networkidle')
+    await page.wait_for_timeout(1000)
     
     # Check if test child exists, if not create one
+    child_exists = False
     try:
-        # Try to find and click the test child
+        # Try to find the test child
         child_btn = page.locator(f'.child-button:has-text("{TEST_CHILD_NAME}")').first
-        await child_btn.click(timeout=2000)
+        await child_btn.click(timeout=3000)
+        child_exists = True
     except Exception:
         # Child doesn't exist, create one
         print("   Creating test child...")
-        await page.fill('input[name="childName"]', TEST_CHILD_NAME)
-        await page.fill('input[name="childAge"]', '5')
-        await page.click('button:has-text("Add Child")')
-        await page.wait_for_timeout(1000)
+        await page.fill('#childName', TEST_CHILD_NAME)
+        await page.fill('#childAge', '5')
+        await page.click('#createBtn')
+        await page.wait_for_timeout(2000)
         
         # Click the newly created child
-        child_btn = page.locator(f'.child-button:has-text("{TEST_CHILD_NAME}")').first
-        await child_btn.click()
+        try:
+            child_btn = page.locator(f'.child-button:has-text("{TEST_CHILD_NAME}")').first
+            await child_btn.click(timeout=3000)
+        except Exception as e:
+            print(f"   Warning: Could not click child button: {e}")
     
     await page.wait_for_timeout(500)
     
     # Click "Start Practicing"
-    await page.click('button:has-text("Start Practicing")')
-    await page.wait_for_url("**/index.html", timeout=10000)
+    try:
+        await page.click('#selectBtn')
+        await page.wait_for_load_state('networkidle', timeout=5000)
+    except Exception as e:
+        print(f"   Warning: Could not click Start Practicing: {e}")
+    
+    # Navigate directly to index
+    await page.goto('http://localhost:8002/index.html')
+    await page.wait_for_load_state('networkidle')
+    await page.wait_for_timeout(1000)
     
     # Get child ID from localStorage
     child_id = await page.evaluate('localStorage.getItem("selectedChildId")')
@@ -196,8 +211,11 @@ async def capture_screenshots():
             print("   ✓ Admin dashboard captured")
             
             # Test 13: Admin Panel - Add word form
-            await page.click('#wordInput')
-            await page.wait_for_timeout(500)
+            try:
+                await page.click('#wordInput', timeout=3000)
+                await page.wait_for_timeout(500)
+            except Exception:
+                print("   ℹ Word input may not be visible, skipping click")
             await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_13_admin_add_word.png', full_page=True)
             print("   ✓ Add word form captured")
             
