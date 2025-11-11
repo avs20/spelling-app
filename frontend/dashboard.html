@@ -304,17 +304,17 @@
 
         // Check auth on page load
         window.addEventListener('DOMContentLoaded', async () => {
-            const token = getAuthToken();
-            if (!token) {
-                window.location.href = '/login.html';
-                return;
-            }
-            
-            const user = await API.getCurrentUser();
-            if (!user) {
-                window.location.href = '/login.html';
-                return;
-            }
+        const token = getAuthToken();
+        if (!token) {
+        window.location.href = '/login';
+        return;
+        }
+        
+        const user = await API.getCurrentUser();
+        if (!user) {
+        window.location.href = '/login';
+        return;
+        }
 
             // Add profile/logout links to header
             const headerActions = document.querySelector('.header-actions');
@@ -323,8 +323,8 @@
                 links.style.display = 'flex';
                 links.style.gap = '15px';
                 links.innerHTML = `
-                    <a href="user-profile.html" style="color: #667eea; text-decoration: none; font-weight: bold;">Profile</a>
-                    <button onclick="logout()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">Logout</button>
+                <a href="/user-profile" style="color: #667eea; text-decoration: none; font-weight: bold;">Profile</a>
+                <button onclick="logout()" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 5px; cursor: pointer;">Logout</button>
                 `;
                 headerActions.appendChild(links);
             }
@@ -333,9 +333,9 @@
         });
 
         function logout() {
-            clearAuthToken();
-            localStorage.removeItem('selectedChildId');
-            window.location.href = '/login.html';
+        clearAuthToken();
+        localStorage.removeItem('selectedChildId');
+        window.location.href = '/login';
         }
 
         async function loadDashboard() {

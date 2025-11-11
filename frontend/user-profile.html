@@ -281,7 +281,7 @@
 
         <div class="card">
             <div class="back-link">
-                <a href="select-child.html">← Back to Children</a>
+                <a href="/select-child">← Back to Children</a>
             </div>
 
             <div class="error" id="errorMsg"></div>
@@ -331,12 +331,12 @@
         });
 
         async function loadUserInfo() {
-            try {
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    window.location.href = '/login.html';
-                    return;
-                }
+        try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+        window.location.href = '/login';
+        return;
+        }
 
                 const apiBase = window.location.hostname === 'localhost' 
                     ? 'http://localhost:8000/api'
@@ -349,9 +349,9 @@
                 });
 
                 if (response.status === 401) {
-                    localStorage.removeItem('authToken');
-                    window.location.href = '/login.html';
-                    return;
+                localStorage.removeItem('authToken');
+                window.location.href = '/login';
+                return;
                 }
 
                 if (!response.ok) throw new Error('Failed to load user');
@@ -488,9 +488,9 @@
         }
 
         function logout() {
-            localStorage.removeItem('authToken');
-            localStorage.removeItem('selectedChildId');
-            window.location.href = '/login.html';
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('selectedChildId');
+        window.location.href = '/login';
         }
 
         function showError(message) {

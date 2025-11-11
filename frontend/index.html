@@ -193,7 +193,7 @@
     <h1>Learn & Draw</h1>
     <p id="word-display" class="word-title">Loading...</p>
     <div style="position: absolute; top: 20px; right: 20px; font-size: 14px;">
-         <a href="user-profile.html" style="color: #667eea; text-decoration: none; margin-right: 10px;">👤 Profile</a>
+         <a href="/user-profile" style="color: #667eea; text-decoration: none; margin-right: 10px;">👤 Profile</a>
          <button onclick="logout()" style="background: none; border: none; color: #667eea; cursor: pointer; text-decoration: underline;">Logout</button>
      </div>
      </header>
@@ -286,15 +286,15 @@
     <script>
         // Phase 12: Auth check
         async function ensureAuthenticated() {
-            const token = getAuthToken();
-            const childId = localStorage.getItem('selectedChildId');
+        const token = getAuthToken();
+        const childId = localStorage.getItem('selectedChildId');
 
-            if (!token || !childId) {
-                window.location.href = '/login.html';
-                return false;
-            }
+        if (!token || !childId) {
+        window.location.href = '/login';
+        return false;
+        }
 
-            return true;
+        return true;
         }
 
         // Phase 12: Dark Mode
@@ -400,9 +400,9 @@
         }
 
         function logout() {
-            clearAuthToken();
-            localStorage.removeItem('selectedChildId');
-            window.location.href = '/login.html';
+        clearAuthToken();
+        localStorage.removeItem('selectedChildId');
+        window.location.href = '/login';
         }
 
         // Auth check on page load

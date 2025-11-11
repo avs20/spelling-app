@@ -232,12 +232,12 @@
         <div id="authSection" class="auth-section">
             <h2>Authentication Required</h2>
             <p>You must be logged in to access this page.</p>
-            <a href="login.html" class="btn btn-primary" style="text-decoration: none; display: inline-block;">Go to Login</a>
+            <a href="/login" class="btn btn-primary" style="text-decoration: none; display: inline-block;">Go to Login</a>
         </div>
 
         <!-- Admin Content -->
         <div id="adminContent" class="admin-content">
-            <a href="select-child.html" class="back-link">← Back to App</a>
+            <a href="/select-child" class="back-link">← Back to App</a>
 
             <!-- Messages -->
             <div id="messageBox"></div>
@@ -309,11 +309,11 @@
         }
 
         function logout() {
-            if (confirm('Are you sure you want to logout?')) {
-                clearAuthToken();
-                localStorage.removeItem('selectedChildId');
-                window.location.href = '/login.html';
-            }
+        if (confirm('Are you sure you want to logout?')) {
+        clearAuthToken();
+        localStorage.removeItem('selectedChildId');
+        window.location.href = '/login';
+        }
         }
 
         window.addEventListener('load', async () => {

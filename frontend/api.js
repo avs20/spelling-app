@@ -34,7 +34,7 @@ function getAuthHeaders() {
 function handleUnauthorized() {
     clearAuthToken();
     localStorage.removeItem('selectedChildId');
-    window.location.href = '/login.html';
+    window.location.href = '/login';
 }
 
 class API {

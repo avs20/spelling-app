@@ -261,7 +261,7 @@
 
         <div class="card">
             <div class="profile-link">
-                <a href="user-profile.html">👤 Profile & Settings</a>
+                <a href="/user-profile">👤 Profile & Settings</a>
             </div>
 
             <div class="error" id="errorMsg"></div>
@@ -312,12 +312,12 @@
         });
 
         async function loadChildren() {
-            try {
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    window.location.href = '/login.html';
-                    return;
-                }
+        try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+        window.location.href = '/login';
+        return;
+        }
 
                 const apiBase = window.location.hostname === 'localhost' 
                     ? 'http://localhost:8000/api'
@@ -330,9 +330,9 @@
                 });
 
                 if (response.status === 401) {
-                    localStorage.removeItem('authToken');
-                    window.location.href = '/login.html';
-                    return;
+                localStorage.removeItem('authToken');
+                window.location.href = '/login';
+                return;
                 }
 
                 if (!response.ok) throw new Error('Failed to load children');
@@ -390,12 +390,12 @@
             }
 
             try {
-                localStorage.setItem('selectedChildId', selectedChildId);
-                window.location.href = '/index.html';
+            localStorage.setItem('selectedChildId', selectedChildId);
+            window.location.href = '/';
             } catch (error) {
-                showError('Error: ' + error.message);
+            showError('Error: ' + error.message);
             }
-        });
+            });
 
         document.getElementById('createBtn').addEventListener('click', async () => {
             const name = document.getElementById('childName').value.trim();
@@ -412,11 +412,11 @@
             createLoading.style.display = 'block';
 
             try {
-                const token = localStorage.getItem('authToken');
-                if (!token) {
-                    window.location.href = '/login.html';
-                    return;
-                }
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+            window.location.href = '/login';
+            return;
+            }
 
                 const apiBase = window.location.hostname === 'localhost' 
                     ? 'http://localhost:8000/api'
