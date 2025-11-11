@@ -684,6 +684,7 @@ def update_word_on_success_for_child(word_id: int, child_id: int):
     """
     Phase 13: Update word progress after successful practice for a child
     Updates child_progress table for per-child tracking
+    Also updates words table for consistency (used as fallback in some queries)
     """
     conn = get_db()
     cursor = conn.cursor()
@@ -743,6 +744,13 @@ def update_word_on_success_for_child(word_id: int, child_id: int):
             INSERT INTO child_progress (child_id, word_id, successful_days, last_practiced, next_review)
             VALUES (?, ?, ?, ?, ?)
         """, (child_id, word_id, new_successful_days, today, next_review))
+    
+    # Also update words table for consistency (used as fallback in some queries)
+    cursor.execute("""
+        UPDATE words
+        SET successful_days = ?, last_practiced = ?, next_review = ?
+        WHERE id = ?
+    """, (new_successful_days, today, next_review, word_id))
     
     conn.commit()
     conn.close()
