@@ -69,6 +69,10 @@ drawings_dir = os.path.join(BASE_DIR, 'data', 'drawings')
 os.makedirs(drawings_dir, exist_ok=True)
 app.mount("/drawings", StaticFiles(directory=drawings_dir), name="drawings")
 
+# Serve static frontend files (CSS, JS, images)
+# This works identically in both local dev and production (Fly.io)
+app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+
 # Serve root and frontend pages
 from fastapi.responses import FileResponse
 
@@ -311,12 +315,22 @@ async def start_session(
     if not word:
         raise HTTPException(status_code=404, detail="Word not found")
     
-    # Get word record for successful_days
+    # Get word record for successful_days from child_progress (per-child tracking)
     from database import get_db
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT successful_days FROM words WHERE id = ?", (word_id,))
+    cursor.execute("""
+        SELECT COALESCE(cp.successful_days, 0) 
+        FROM child_progress cp
+        WHERE cp.word_id = ? AND cp.child_id = ?
+    """, (word_id, child_id))
     word_data = cursor.fetchone()
+    
+    # If no record in child_progress, check words table as fallback
+    if not word_data:
+        cursor.execute("SELECT successful_days FROM words WHERE id = ?", (word_id,))
+        word_data = cursor.fetchone()
+    
     conn.close()
     
     successful_days = word_data[0] if word_data else 0
@@ -371,12 +385,22 @@ async def next_word(child_id: int = Query(...), user_id: int = Depends(get_curre
     if not word:
         raise HTTPException(status_code=404, detail="Word not found")
     
-    # Get word record for successful_days from child_progress
+    # Get word record for successful_days from child_progress (per-child tracking)
     from database import get_db
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT successful_days FROM words WHERE id = ?", (word_id,))
+    cursor.execute("""
+        SELECT COALESCE(cp.successful_days, 0) 
+        FROM child_progress cp
+        WHERE cp.word_id = ? AND cp.child_id = ?
+    """, (word_id, child_id))
     word_data = cursor.fetchone()
+    
+    # If no record in child_progress, check words table as fallback
+    if not word_data:
+        cursor.execute("SELECT successful_days FROM words WHERE id = ?", (word_id,))
+        word_data = cursor.fetchone()
+    
     conn.close()
     
     successful_days = word_data[0] if word_data else 0
@@ -653,28 +677,7 @@ async def reset_database():
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 
-# Catch-all for static assets and HTML pages (MUST be last route)
-@app.get("/{path:path}")
-async def serve_static(path: str):
-    """Serve static files or return index.html for SPA routing"""
-    file_path = os.path.join(frontend_dir, path)
-    
-    # If file exists, serve it
-    if os.path.isfile(file_path):
-        return FileResponse(file_path)
-    
-    # If path.html exists, serve it as HTML
-    if not path.endswith('.html'):
-        html_file = os.path.join(frontend_dir, f"{path}.html")
-        if os.path.isfile(html_file):
-            return FileResponse(html_file, media_type="text/html")
-    
-    # Default to index.html for SPA routing
-    index_path = os.path.join(frontend_dir, "index.html")
-    if os.path.isfile(index_path):
-        return FileResponse(index_path, media_type="text/html")
-    
-    raise HTTPException(status_code=404, detail="Not Found")
+
 
 
 if __name__ == "__main__":

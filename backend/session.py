@@ -86,16 +86,14 @@ class WordSession:
     def mark_word_mastered(self, word_id):
         """
         Mark word as mastered (correct answer)
-        Word goes to end of queue to be practiced with others
+        Word is removed from queue permanently - no cycling back
         
         Args:
             word_id: ID of word that was spelled correctly
         """
         if word_id in self.available_words:
-            # Remove from current position
+            # Remove from queue completely
             self.available_words.remove(word_id)
-            # Add to end (will cycle back later)
-            self.available_words.append(word_id)
             # Track as mastered in this session
             self.mastered_words.add(word_id)
     
