@@ -1,5 +1,5 @@
 """
-Phase 9: Visual regression testing
+Phase 12: Visual regression testing with JWT authentication
 Automated screenshot capture of all app screens and states
 """
 
@@ -11,6 +11,97 @@ from datetime import datetime
 # Create screenshots directory
 SCREENSHOTS_DIR = "../test-screenshots"
 os.makedirs(SCREENSHOTS_DIR, exist_ok=True)
+
+# Test credentials (JWT-based authentication)
+TEST_EMAIL = "visual_test_parent@test.com"
+TEST_PASSWORD = "VisualTest123!"
+TEST_CHILD_NAME = "Visual Test Child"
+
+async def ensure_test_user_exists():
+    """Register test user if doesn't exist"""
+    async with async_playwright() as p:
+        browser = await p.chromium.launch(headless=True)
+        context = await browser.new_context()
+        page = await context.new_page()
+        
+        try:
+            # Try to register test user
+            await page.goto('http://localhost:8002/register.html')
+            await page.fill('input[name="email"]', TEST_EMAIL)
+            await page.fill('input[name="password"]', TEST_PASSWORD)
+            await page.fill('input[name="confirm_password"]', TEST_PASSWORD)
+            await page.click('button:has-text("Register")')
+            
+            # Wait for navigation to login or success
+            await page.wait_for_timeout(2000)
+            print("✓ Test user registered")
+        except Exception as e:
+            print(f"ℹ Test user may already exist: {str(e)[:50]}")
+        finally:
+            await browser.close()
+
+async def login_and_get_child_id(page):
+    """Login and return the selected child ID"""
+    # Navigate to login
+    await page.goto('http://localhost:8002/login.html')
+    await page.wait_for_load_state('networkidle')
+    
+    # Fill login form
+    await page.fill('input[name="email"]', TEST_EMAIL)
+    await page.fill('input[name="password"]', TEST_PASSWORD)
+    await page.click('button:has-text("Login")')
+    
+    # Wait for token to be saved
+    await page.wait_for_function(
+        'localStorage.getItem("authToken")',
+        timeout=10000
+    )
+    await page.wait_for_timeout(1000)
+    
+    # Navigate to child selector
+    await page.goto('http://localhost:8002/select-child.html')
+    await page.wait_for_load_state('networkidle')
+    await page.wait_for_timeout(1000)
+    
+    # Check if test child exists, if not create one
+    child_exists = False
+    try:
+        # Try to find the test child
+        child_btn = page.locator(f'.child-button:has-text("{TEST_CHILD_NAME}")').first
+        await child_btn.click(timeout=3000)
+        child_exists = True
+    except Exception:
+        # Child doesn't exist, create one
+        print("   Creating test child...")
+        await page.fill('#childName', TEST_CHILD_NAME)
+        await page.fill('#childAge', '5')
+        await page.click('#createBtn')
+        await page.wait_for_timeout(2000)
+        
+        # Click the newly created child
+        try:
+            child_btn = page.locator(f'.child-button:has-text("{TEST_CHILD_NAME}")').first
+            await child_btn.click(timeout=3000)
+        except Exception as e:
+            print(f"   Warning: Could not click child button: {e}")
+    
+    await page.wait_for_timeout(500)
+    
+    # Click "Start Practicing"
+    try:
+        await page.click('#selectBtn')
+        await page.wait_for_load_state('networkidle', timeout=5000)
+    except Exception as e:
+        print(f"   Warning: Could not click Start Practicing: {e}")
+    
+    # Navigate directly to index
+    await page.goto('http://localhost:8002/index.html')
+    await page.wait_for_load_state('networkidle')
+    await page.wait_for_timeout(1000)
+    
+    # Get child ID from localStorage
+    child_id = await page.evaluate('localStorage.getItem("selectedChildId")')
+    return child_id
 
 async def capture_screenshots():
     """Capture screenshots of all app pages and states"""
@@ -29,154 +120,183 @@ async def capture_screenshots():
         print("📸 Starting visual regression tests...")
         print(f"Screenshots will be saved to: {SCREENSHOTS_DIR}")
         
-        # Test 1: Main App - Initial Load
-        print("\n1️⃣ Testing main app (index.html)...")
-        await page.goto('http://localhost:8002/index.html')
-        await page.wait_for_load_state('networkidle')
-        await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_01_main_app_initial.png', full_page=True)
-        print("   ✓ Initial load captured")
-        
-        # Test 2: Main App - Drawing canvas
-        await page.click('#pen-btn')
-        await page.wait_for_timeout(500)
-        await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_02_main_app_pen_mode.png', full_page=True)
-        print("   ✓ Pen mode captured")
-        
-        # Test 3: Main App - Eraser mode
-        await page.click('#eraser-btn')
-        await page.wait_for_timeout(500)
-        await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_03_main_app_eraser_mode.png', full_page=True)
-        print("   ✓ Eraser mode captured")
-        
-        # Test 4: Main App - Color picker
-        await page.click('#color-picker')
-        await page.wait_for_timeout(500)
-        await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_04_main_app_color_picker.png', full_page=True)
-        print("   ✓ Color picker captured")
-        
-        # Test 5: Main App - Dark mode
-        await page.click('#dark-mode-toggle')
-        await page.wait_for_timeout(500)
-        await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_05_main_app_dark_mode.png', full_page=True)
-        print("   ✓ Dark mode captured")
-        
-        # Test 6: Main App - Progress badge
-        await page.click('#dark-mode-toggle')  # Back to light mode
-        await page.wait_for_timeout(500)
-        await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_06_main_app_with_badge.png', full_page=True)
-        print("   ✓ Progress badge captured")
-        
-        # Test 7: Admin Panel - Login
-        print("\n2️⃣ Testing admin panel (admin.html)...")
-        await page.goto('http://localhost:8002/admin.html')
-        await page.wait_for_load_state('networkidle')
-        await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_07_admin_login.png', full_page=True)
-        print("   ✓ Admin login page captured")
-        
-        # Test 8: Admin Panel - Authenticated
-        await page.fill('#passwordInput', 'admin123')
-        await page.click('button:has-text("Login")')
-        await page.wait_for_timeout(1000)
-        await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_08_admin_dashboard.png', full_page=True)
-        print("   ✓ Admin dashboard captured")
-        
-        # Test 9: Admin Panel - Add word form focused
-        await page.click('#wordInput')
-        await page.wait_for_timeout(500)
-        await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_09_admin_add_word.png', full_page=True)
-        print("   ✓ Add word form captured")
-        
-        # Test 10: Parent Dashboard
-        print("\n3️⃣ Testing parent dashboard (dashboard.html)...")
-        await page.goto('http://localhost:8002/dashboard.html')
-        await page.wait_for_load_state('networkidle')
-        await page.wait_for_timeout(2000)  # Wait for stats to load
-        await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_10_dashboard_main.png', full_page=True)
-        print("   ✓ Dashboard main view captured")
-        
-        # Test 11: Dashboard - Scrolled to word performance
-        await page.evaluate('window.scrollTo(0, document.body.scrollHeight / 2)')
-        await page.wait_for_timeout(500)
-        await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_11_dashboard_word_performance.png', full_page=True)
-        print("   ✓ Word performance section captured")
-        
-        # Test 12: Dashboard - Scrolled to drawings
-        await page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
-        await page.wait_for_timeout(500)
-        await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_12_dashboard_drawings.png', full_page=True)
-        print("   ✓ Drawings gallery captured")
-        
-        # Test 13: Compatibility Test Page
-        print("\n4️⃣ Testing compatibility page (test-compatibility.html)...")
-        await page.goto('http://localhost:8002/test-compatibility.html')
-        await page.wait_for_load_state('networkidle')
-        await page.wait_for_timeout(2000)  # Wait for tests to run
-        await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_13_compatibility_tests.png', full_page=True)
-        print("   ✓ Compatibility tests captured")
-        
-        # Test 14: Mobile viewport - Main app
-        print("\n5️⃣ Testing mobile viewports...")
-        await context.close()
-        mobile_context = await browser.new_context(
-            viewport={'width': 375, 'height': 812},  # iPhone X
-            device_scale_factor=3,
-            is_mobile=True,
-            has_touch=True
-        )
-        mobile_page = await mobile_context.new_page()
-        
-        await mobile_page.goto('http://localhost:8002/index.html')
-        await mobile_page.wait_for_load_state('networkidle')
-        await mobile_page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_14_mobile_main_app.png', full_page=True)
-        print("   ✓ Mobile main app captured")
-        
-        # Test 15: Mobile - Dashboard
-        await mobile_page.goto('http://localhost:8002/dashboard.html')
-        await mobile_page.wait_for_load_state('networkidle')
-        await mobile_page.wait_for_timeout(2000)
-        await mobile_page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_15_mobile_dashboard.png', full_page=True)
-        print("   ✓ Mobile dashboard captured")
-        
-        # Test 16: Tablet viewport - Main app
-        print("\n6️⃣ Testing tablet viewports...")
-        await mobile_context.close()
-        tablet_context = await browser.new_context(
-            viewport={'width': 1024, 'height': 768},  # iPad
-            device_scale_factor=2,
-            is_mobile=True,
-            has_touch=True
-        )
-        tablet_page = await tablet_context.new_page()
-        
-        await tablet_page.goto('http://localhost:8002/index.html')
-        await tablet_page.wait_for_load_state('networkidle')
-        await tablet_page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_16_tablet_main_app.png', full_page=True)
-        print("   ✓ Tablet main app captured")
-        
-        # Test 17: Tablet landscape
-        await tablet_context.close()
-        tablet_landscape_context = await browser.new_context(
-            viewport={'width': 1024, 'height': 768},
-            device_scale_factor=2,
-            is_mobile=True,
-            has_touch=True
-        )
-        tablet_landscape_page = await tablet_landscape_context.new_page()
-        
-        await tablet_landscape_page.goto('http://localhost:8002/index.html')
-        await tablet_landscape_page.wait_for_load_state('networkidle')
-        await tablet_landscape_page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_17_tablet_landscape.png', full_page=True)
-        print("   ✓ Tablet landscape captured")
-        
-        # Close browser
-        await browser.close()
-        
-        print("\n✅ All screenshots captured successfully!")
-        print(f"📁 Location: {os.path.abspath(SCREENSHOTS_DIR)}")
-        print(f"📊 Total screenshots: 17")
-        
-        # Create index HTML to view all screenshots
-        create_screenshot_index(timestamp)
+        try:
+            # Test 1: Login Page
+            print("\n1️⃣ Testing login flow...")
+            await page.goto('http://localhost:8002/login.html')
+            await page.wait_for_load_state('networkidle')
+            await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_01_login_page.png', full_page=True)
+            print("   ✓ Login page captured")
+            
+            # Test 2-7: Main App with authentication
+            print("\n2️⃣ Testing main app with JWT auth...")
+            child_id = await login_and_get_child_id(page)
+            print(f"   ✓ Logged in and selected child (ID: {child_id})")
+            
+            # Test 2: Main App - Initial Load
+            await page.wait_for_load_state('networkidle')
+            await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_02_main_app_initial.png', full_page=True)
+            print("   ✓ Initial load captured")
+            
+            # Test 3: Main App - Drawing canvas
+            await page.click('#pen-btn')
+            await page.wait_for_timeout(500)
+            await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_03_main_app_pen_mode.png', full_page=True)
+            print("   ✓ Pen mode captured")
+            
+            # Test 4: Main App - Eraser mode
+            await page.click('#eraser-btn')
+            await page.wait_for_timeout(500)
+            await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_04_main_app_eraser_mode.png', full_page=True)
+            print("   ✓ Eraser mode captured")
+            
+            # Test 5: Main App - Color picker
+            await page.click('#color-picker')
+            await page.wait_for_timeout(500)
+            await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_05_main_app_color_picker.png', full_page=True)
+            print("   ✓ Color picker captured")
+            
+            # Test 6: Main App - Dark mode
+            await page.click('#dark-mode-toggle')
+            await page.wait_for_timeout(500)
+            await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_06_main_app_dark_mode.png', full_page=True)
+            print("   ✓ Dark mode captured")
+            
+            # Test 7: Main App - Progress badge
+            await page.click('#dark-mode-toggle')  # Back to light mode
+            await page.wait_for_timeout(500)
+            await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_07_main_app_with_badge.png', full_page=True)
+            print("   ✓ Progress badge captured")
+            
+            # Test 8: Parent Dashboard
+            print("\n3️⃣ Testing parent dashboard...")
+            await page.goto('http://localhost:8002/dashboard.html')
+            await page.wait_for_load_state('networkidle')
+            await page.wait_for_timeout(2000)  # Wait for stats to load
+            await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_08_dashboard_main.png', full_page=True)
+            print("   ✓ Dashboard main view captured")
+            
+            # Test 9: Dashboard - Scrolled to word performance
+            await page.evaluate('window.scrollTo(0, document.body.scrollHeight / 2)')
+            await page.wait_for_timeout(500)
+            await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_09_dashboard_word_performance.png', full_page=True)
+            print("   ✓ Word performance section captured")
+            
+            # Test 10: Dashboard - Scrolled to drawings
+            await page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+            await page.wait_for_timeout(500)
+            await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_10_dashboard_drawings.png', full_page=True)
+            print("   ✓ Drawings gallery captured")
+            
+            # Test 11: Admin Panel - Login required
+            print("\n4️⃣ Testing admin panel...")
+            await page.goto('http://localhost:8002/admin.html')
+            await page.wait_for_load_state('networkidle')
+            await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_11_admin_auth_required.png', full_page=True)
+            print("   ✓ Admin auth required page captured")
+            
+            # Test 12: Admin Panel - Authenticated
+            # Login again for admin access
+            await page.goto('http://localhost:8002/login.html')
+            await page.fill('input[name="email"]', TEST_EMAIL)
+            await page.fill('input[name="password"]', TEST_PASSWORD)
+            await page.click('button:has-text("Login")')
+            await page.wait_for_function('localStorage.getItem("authToken")', timeout=10000)
+            
+            # Navigate to admin
+            await page.goto('http://localhost:8002/admin.html')
+            await page.wait_for_load_state('networkidle')
+            await page.wait_for_timeout(1000)
+            await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_12_admin_dashboard.png', full_page=True)
+            print("   ✓ Admin dashboard captured")
+            
+            # Test 13: Admin Panel - Add word form
+            try:
+                await page.click('#wordInput', timeout=3000)
+                await page.wait_for_timeout(500)
+            except Exception:
+                print("   ℹ Word input may not be visible, skipping click")
+            await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_13_admin_add_word.png', full_page=True)
+            print("   ✓ Add word form captured")
+            
+            # Test 14: Compatibility Test Page
+            print("\n5️⃣ Testing compatibility page...")
+            await page.goto('http://localhost:8002/test-compatibility.html')
+            await page.wait_for_load_state('networkidle')
+            await page.wait_for_timeout(2000)  # Wait for tests to run
+            await page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_14_compatibility_tests.png', full_page=True)
+            print("   ✓ Compatibility tests captured")
+            
+            # Test 15: Mobile viewport - Main app
+            print("\n6️⃣ Testing mobile viewports...")
+            await context.close()
+            mobile_context = await browser.new_context(
+                viewport={'width': 375, 'height': 812},  # iPhone X
+                device_scale_factor=3,
+                is_mobile=True,
+                has_touch=True
+            )
+            mobile_page = await mobile_context.new_page()
+            
+            await mobile_page.goto('http://localhost:8002/index.html')
+            await mobile_page.wait_for_load_state('networkidle')
+            await mobile_page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_15_mobile_main_app.png', full_page=True)
+            print("   ✓ Mobile main app captured")
+            
+            # Test 16: Mobile - Dashboard
+            await mobile_page.goto('http://localhost:8002/dashboard.html')
+            await mobile_page.wait_for_load_state('networkidle')
+            await mobile_page.wait_for_timeout(2000)
+            await mobile_page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_16_mobile_dashboard.png', full_page=True)
+            print("   ✓ Mobile dashboard captured")
+            
+            # Test 17: Tablet viewport - Main app
+            print("\n7️⃣ Testing tablet viewports...")
+            await mobile_context.close()
+            tablet_context = await browser.new_context(
+                viewport={'width': 1024, 'height': 768},  # iPad
+                device_scale_factor=2,
+                is_mobile=True,
+                has_touch=True
+            )
+            tablet_page = await tablet_context.new_page()
+            
+            await tablet_page.goto('http://localhost:8002/index.html')
+            await tablet_page.wait_for_load_state('networkidle')
+            await tablet_page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_17_tablet_main_app.png', full_page=True)
+            print("   ✓ Tablet main app captured")
+            
+            # Test 18: Tablet landscape
+            await tablet_context.close()
+            tablet_landscape_context = await browser.new_context(
+                viewport={'width': 1024, 'height': 768},
+                device_scale_factor=2,
+                is_mobile=True,
+                has_touch=True
+            )
+            tablet_landscape_page = await tablet_landscape_context.new_page()
+            
+            await tablet_landscape_page.goto('http://localhost:8002/index.html')
+            await tablet_landscape_page.wait_for_load_state('networkidle')
+            await tablet_landscape_page.screenshot(path=f'{SCREENSHOTS_DIR}/{timestamp}_18_tablet_landscape.png', full_page=True)
+            print("   ✓ Tablet landscape captured")
+            
+            # Close browser
+            await browser.close()
+            
+            print("\n✅ All screenshots captured successfully!")
+            print(f"📁 Location: {os.path.abspath(SCREENSHOTS_DIR)}")
+            print(f"📊 Total screenshots: 18")
+            
+            # Create index HTML to view all screenshots
+            create_screenshot_index(timestamp)
+            
+        except Exception as e:
+            print(f"\n❌ Error during testing: {e}")
+            import traceback
+            traceback.print_exc()
+            await browser.close()
+            raise
 
 def create_screenshot_index(timestamp):
     """Create an HTML index to view all screenshots"""
@@ -245,79 +365,84 @@ def create_screenshot_index(timestamp):
         <h1>📸 Visual Regression Test Results</h1>
         <div class="info">
             <p><strong>Timestamp:</strong> {timestamp}</p>
-            <p><strong>Total Screenshots:</strong> 17</p>
+            <p><strong>Total Screenshots:</strong> 18</p>
             <p><strong>Browser:</strong> Chromium (Playwright)</p>
+            <p><strong>Authentication:</strong> JWT-based (Phase 12)</p>
             <p>Click any screenshot to view full size</p>
         </div>
         
         <div class="screenshot-grid">
             <div class="screenshot-item">
-                <div class="screenshot-title">1. Main App - Initial Load</div>
-                <img src="{timestamp}_01_main_app_initial.png" alt="Main App Initial" onclick="window.open(this.src)">
+                <div class="screenshot-title">1. Login Page</div>
+                <img src="{timestamp}_01_login_page.png" alt="Login Page" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">2. Main App - Pen Mode</div>
-                <img src="{timestamp}_02_main_app_pen_mode.png" alt="Pen Mode" onclick="window.open(this.src)">
+                <div class="screenshot-title">2. Main App - Initial Load</div>
+                <img src="{timestamp}_02_main_app_initial.png" alt="Main App Initial" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">3. Main App - Eraser Mode</div>
-                <img src="{timestamp}_03_main_app_eraser_mode.png" alt="Eraser Mode" onclick="window.open(this.src)">
+                <div class="screenshot-title">3. Main App - Pen Mode</div>
+                <img src="{timestamp}_03_main_app_pen_mode.png" alt="Pen Mode" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">4. Main App - Color Picker</div>
-                <img src="{timestamp}_04_main_app_color_picker.png" alt="Color Picker" onclick="window.open(this.src)">
+                <div class="screenshot-title">4. Main App - Eraser Mode</div>
+                <img src="{timestamp}_04_main_app_eraser_mode.png" alt="Eraser Mode" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">5. Main App - Dark Mode</div>
-                <img src="{timestamp}_05_main_app_dark_mode.png" alt="Dark Mode" onclick="window.open(this.src)">
+                <div class="screenshot-title">5. Main App - Color Picker</div>
+                <img src="{timestamp}_05_main_app_color_picker.png" alt="Color Picker" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">6. Main App - Progress Badge</div>
-                <img src="{timestamp}_06_main_app_with_badge.png" alt="Progress Badge" onclick="window.open(this.src)">
+                <div class="screenshot-title">6. Main App - Dark Mode</div>
+                <img src="{timestamp}_06_main_app_dark_mode.png" alt="Dark Mode" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">7. Admin - Login</div>
-                <img src="{timestamp}_07_admin_login.png" alt="Admin Login" onclick="window.open(this.src)">
+                <div class="screenshot-title">7. Main App - Progress Badge</div>
+                <img src="{timestamp}_07_main_app_with_badge.png" alt="Progress Badge" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">8. Admin - Dashboard</div>
-                <img src="{timestamp}_08_admin_dashboard.png" alt="Admin Dashboard" onclick="window.open(this.src)">
+                <div class="screenshot-title">8. Dashboard - Main</div>
+                <img src="{timestamp}_08_dashboard_main.png" alt="Dashboard Main" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">9. Admin - Add Word</div>
-                <img src="{timestamp}_09_admin_add_word.png" alt="Add Word" onclick="window.open(this.src)">
+                <div class="screenshot-title">9. Dashboard - Word Performance</div>
+                <img src="{timestamp}_09_dashboard_word_performance.png" alt="Word Performance" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">10. Dashboard - Main</div>
-                <img src="{timestamp}_10_dashboard_main.png" alt="Dashboard Main" onclick="window.open(this.src)">
+                <div class="screenshot-title">10. Dashboard - Drawings</div>
+                <img src="{timestamp}_10_dashboard_drawings.png" alt="Drawings Gallery" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">11. Dashboard - Word Performance</div>
-                <img src="{timestamp}_11_dashboard_word_performance.png" alt="Word Performance" onclick="window.open(this.src)">
+                <div class="screenshot-title">11. Admin - Auth Required</div>
+                <img src="{timestamp}_11_admin_auth_required.png" alt="Admin Auth" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">12. Dashboard - Drawings</div>
-                <img src="{timestamp}_12_dashboard_drawings.png" alt="Drawings Gallery" onclick="window.open(this.src)">
+                <div class="screenshot-title">12. Admin - Dashboard</div>
+                <img src="{timestamp}_12_admin_dashboard.png" alt="Admin Dashboard" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">13. Compatibility Tests</div>
-                <img src="{timestamp}_13_compatibility_tests.png" alt="Compatibility" onclick="window.open(this.src)">
+                <div class="screenshot-title">13. Admin - Add Word</div>
+                <img src="{timestamp}_13_admin_add_word.png" alt="Add Word" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">14. Mobile - Main App</div>
-                <img src="{timestamp}_14_mobile_main_app.png" alt="Mobile Main" onclick="window.open(this.src)">
+                <div class="screenshot-title">14. Compatibility Tests</div>
+                <img src="{timestamp}_14_compatibility_tests.png" alt="Compatibility" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">15. Mobile - Dashboard</div>
-                <img src="{timestamp}_15_mobile_dashboard.png" alt="Mobile Dashboard" onclick="window.open(this.src)">
+                <div class="screenshot-title">15. Mobile - Main App</div>
+                <img src="{timestamp}_15_mobile_main_app.png" alt="Mobile Main" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">16. Tablet - Main App</div>
-                <img src="{timestamp}_16_tablet_main_app.png" alt="Tablet Main" onclick="window.open(this.src)">
+                <div class="screenshot-title">16. Mobile - Dashboard</div>
+                <img src="{timestamp}_16_mobile_dashboard.png" alt="Mobile Dashboard" onclick="window.open(this.src)">
             </div>
             <div class="screenshot-item">
-                <div class="screenshot-title">17. Tablet - Landscape</div>
-                <img src="{timestamp}_17_tablet_landscape.png" alt="Tablet Landscape" onclick="window.open(this.src)">
+                <div class="screenshot-title">17. Tablet - Main App</div>
+                <img src="{timestamp}_17_tablet_main_app.png" alt="Tablet Main" onclick="window.open(this.src)">
+            </div>
+            <div class="screenshot-item">
+                <div class="screenshot-title">18. Tablet - Landscape</div>
+                <img src="{timestamp}_18_tablet_landscape.png" alt="Tablet Landscape" onclick="window.open(this.src)">
             </div>
         </div>
     </div>
@@ -333,7 +458,7 @@ def create_screenshot_index(timestamp):
 
 if __name__ == "__main__":
     print("=" * 60)
-    print("VISUAL REGRESSION TESTING")
+    print("VISUAL REGRESSION TESTING - Phase 12 JWT Auth")
     print("=" * 60)
     print("\nPrerequisites:")
     print("1. Backend running on http://localhost:8000")
@@ -345,6 +470,7 @@ if __name__ == "__main__":
     try:
         import time
         time.sleep(3)
+        asyncio.run(ensure_test_user_exists())
         asyncio.run(capture_screenshots())
     except KeyboardInterrupt:
         print("\n\n❌ Tests cancelled by user")
