@@ -69,9 +69,12 @@ class SpellingApp {
         const wordData = await API.getNextWord();
 
         if (!wordData) {
-            // No active session - show modal to start one
-            if (typeof showSessionModal === 'function') {
-                showSessionModal();
+            // No active session - automatically start one with 5 words
+            const sessionResponse = await API.startSession(5);
+            if (sessionResponse && sessionResponse.completed) {
+                this.showCompletionScreen();
+            } else if (sessionResponse) {
+                location.reload();
             } else {
                 this.showCompletionScreen();
             }
