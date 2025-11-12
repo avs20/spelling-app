@@ -27,6 +27,7 @@ class WordSession:
         self.last_word_id = None  # Track last shown word to prevent consecutive duplicates
         self.mastered_words = set()  # Words completed in this session
         self.session_started = False
+        self.initial_word_count = 0  # Track actual number of words loaded
         
         self._load_words()
     
@@ -44,6 +45,8 @@ class WordSession:
         
         # Store word IDs for queue
         self.available_words = [word['id'] for word in all_words]
+        
+        self.initial_word_count = len(self.available_words)
         
         # Shuffle for variety
         random.shuffle(self.available_words)
@@ -136,7 +139,7 @@ class WordSession:
             }
         """
         return {
-            'total_words': self.num_words or len(self.available_words),
+            'total_words': self.initial_word_count,
             'mastered': len(self.mastered_words),
             'remaining': len(self.available_words) - len([w for w in self.available_words if w in self.mastered_words]),
             'queue_size': len(self.available_words)
