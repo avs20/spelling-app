@@ -643,6 +643,7 @@ def get_words_for_child(child_id: int):
     Phase 13: Get words available for child with per-child progress
     Returns core words (user_id IS NULL) + family's custom words
     Uses child_progress table for per-child successful_days tracking
+    Only returns words that need practice (next_review <= today)
     """
     conn = get_db()
     cursor = conn.cursor()
@@ -659,6 +660,7 @@ def get_words_for_child(child_id: int):
     
     # Get core words + family's custom words with per-child progress
     # Use child_progress table for successful_days, defaulting to 0 if no entry exists
+    # Only include words where next_review <= today (ready for practice today)
     cursor.execute("""
         SELECT 
             w.id, 
@@ -671,7 +673,7 @@ def get_words_for_child(child_id: int):
         LEFT JOIN child_progress cp ON w.id = cp.word_id AND cp.child_id = ?
         WHERE (w.user_id IS NULL OR w.user_id = ?)
         AND COALESCE(cp.next_review, w.next_review) <= ?
-        ORDER BY RANDOM()
+        ORDER BY COALESCE(cp.successful_days, 0) ASC, w.word ASC
     """, (child_id, user_id, today))
     
     words = cursor.fetchall()
@@ -682,6 +684,7 @@ def update_word_on_success_for_child(word_id: int, child_id: int):
     """
     Phase 13: Update word progress after successful practice for a child
     Updates child_progress table for per-child tracking
+    Also updates words table for consistency (used as fallback in some queries)
     """
     conn = get_db()
     cursor = conn.cursor()
@@ -741,6 +744,13 @@ def update_word_on_success_for_child(word_id: int, child_id: int):
             INSERT INTO child_progress (child_id, word_id, successful_days, last_practiced, next_review)
             VALUES (?, ?, ?, ?, ?)
         """, (child_id, word_id, new_successful_days, today, next_review))
+    
+    # Also update words table for consistency (used as fallback in some queries)
+    cursor.execute("""
+        UPDATE words
+        SET successful_days = ?, last_practiced = ?, next_review = ?
+        WHERE id = ?
+    """, (new_successful_days, today, next_review, word_id))
     
     conn.commit()
     conn.close()
