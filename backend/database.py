@@ -3,6 +3,7 @@ Database setup and operations
 SQLite database for words and practices
 Phase 4: Spaced repetition tracking
 Phase 12: Multi-user and multi-child support
+Phase 13: Modal deployment with Turso support
 """
 
 import sqlite3
@@ -11,16 +12,33 @@ import os
 import hashlib
 import secrets
 
+try:
+    import libsql_experimental as libsql
+    LIBSQL_AVAILABLE = True
+except ImportError:
+    LIBSQL_AVAILABLE = False
+
 IS_DOCKER = os.path.exists('/.dockerenv') or os.getenv('FLY_APP_NAME')
 BASE_DIR = '/app' if IS_DOCKER else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DB_PATH = os.path.join(BASE_DIR, 'data', 'spelling.db')
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
+TURSO_DATABASE_URL = os.getenv('TURSO_DATABASE_URL')
+TURSO_AUTH_TOKEN = os.getenv('TURSO_AUTH_TOKEN')
+USE_TURSO = TURSO_DATABASE_URL and TURSO_AUTH_TOKEN and LIBSQL_AVAILABLE
+
 def get_db():
-    """Get database connection"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    """
+    Get database connection
+    Supports both local SQLite and remote Turso (libSQL)
+    """
+    if USE_TURSO:
+        conn = libsql.connect(TURSO_DATABASE_URL, auth_token=TURSO_AUTH_TOKEN)
+        return conn
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
 
 def init_db():
     """Initialize database with tables"""
