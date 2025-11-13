@@ -320,19 +320,14 @@ async def start_session(
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT COALESCE(cp.successful_days, 0) 
-        FROM child_progress cp
-        WHERE cp.word_id = ? AND cp.child_id = ?
+        SELECT successful_days
+        FROM child_progress
+        WHERE word_id = ? AND child_id = ?
     """, (word_id, child_id))
     word_data = cursor.fetchone()
-    
-    # If no record in child_progress, check words table as fallback
-    if not word_data:
-        cursor.execute("SELECT successful_days FROM words WHERE id = ?", (word_id,))
-        word_data = cursor.fetchone()
-    
     conn.close()
     
+    # If no record in child_progress, this child hasn't practiced this word yet
     successful_days = word_data[0] if word_data else 0
     
     stats = current_session.get_session_stats()
@@ -390,19 +385,14 @@ async def next_word(child_id: int = Query(...), user_id: int = Depends(get_curre
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT COALESCE(cp.successful_days, 0) 
-        FROM child_progress cp
-        WHERE cp.word_id = ? AND cp.child_id = ?
+        SELECT successful_days
+        FROM child_progress
+        WHERE word_id = ? AND child_id = ?
     """, (word_id, child_id))
     word_data = cursor.fetchone()
-    
-    # If no record in child_progress, check words table as fallback
-    if not word_data:
-        cursor.execute("SELECT successful_days FROM words WHERE id = ?", (word_id,))
-        word_data = cursor.fetchone()
-    
     conn.close()
     
+    # If no record in child_progress, this child hasn't practiced this word yet
     successful_days = word_data[0] if word_data else 0
     
     stats = current_session.get_session_stats()

@@ -626,11 +626,12 @@ def update_child(child_id: int, name: str = None, age: int = None) -> bool:
     return affected > 0
 
 def delete_child(child_id: int) -> bool:
-    """Delete child and all their practices"""
+    """Delete child and all their practices and progress"""
     conn = get_db()
     cursor = conn.cursor()
     
     cursor.execute("DELETE FROM practices WHERE child_id = ?", (child_id,))
+    cursor.execute("DELETE FROM child_progress WHERE child_id = ?", (child_id,))
     cursor.execute("DELETE FROM children WHERE id = ?", (child_id,))
     
     conn.commit()
@@ -661,6 +662,7 @@ def get_words_for_child(child_id: int):
     # Get core words + family's custom words with per-child progress
     # Use child_progress table for successful_days, defaulting to 0 if no entry exists
     # Only include words where next_review <= today (ready for practice today)
+    # For new children (no cp record), cp.next_review IS NULL so they see all words
     cursor.execute("""
         SELECT 
             w.id, 
@@ -672,7 +674,7 @@ def get_words_for_child(child_id: int):
         FROM words w
         LEFT JOIN child_progress cp ON w.id = cp.word_id AND cp.child_id = ?
         WHERE (w.user_id IS NULL OR w.user_id = ?)
-        AND COALESCE(cp.next_review, w.next_review) <= ?
+        AND (cp.next_review IS NULL OR cp.next_review <= ?)
         ORDER BY COALESCE(cp.successful_days, 0) ASC, w.word ASC
     """, (child_id, user_id, today))
     
@@ -684,7 +686,6 @@ def update_word_on_success_for_child(word_id: int, child_id: int):
     """
     Phase 13: Update word progress after successful practice for a child
     Updates child_progress table for per-child tracking
-    Also updates words table for consistency (used as fallback in some queries)
     """
     conn = get_db()
     cursor = conn.cursor()
@@ -744,13 +745,6 @@ def update_word_on_success_for_child(word_id: int, child_id: int):
             INSERT INTO child_progress (child_id, word_id, successful_days, last_practiced, next_review)
             VALUES (?, ?, ?, ?, ?)
         """, (child_id, word_id, new_successful_days, today, next_review))
-    
-    # Also update words table for consistency (used as fallback in some queries)
-    cursor.execute("""
-        UPDATE words
-        SET successful_days = ?, last_practiced = ?, next_review = ?
-        WHERE id = ?
-    """, (new_successful_days, today, next_review, word_id))
     
     conn.commit()
     conn.close()
