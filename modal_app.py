@@ -35,6 +35,7 @@ def fastapi_app():
     return fastapi_app
 
 @app.function(
+    image=image,
     schedule=modal.Cron("*/5 * * * *"),
     secrets=[modal.Secret.from_name("turso-credentials")],
 )
