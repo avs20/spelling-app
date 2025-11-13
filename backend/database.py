@@ -161,20 +161,7 @@ def init_db():
         )
     """)
     
-    # Insert test words if empty - Phase 4: Initialize with next_review = today
-    # Phase 12: Core words have user_id = NULL
-    cursor.execute("SELECT COUNT(*) FROM words")
-    if cursor.fetchone()[0] == 0:
-        today = date.today().isoformat()
-        test_words = [
-            ("bee", "insects", 0, None, today, None),
-            ("spider", "insects", 0, None, today, None),
-            ("butterfly", "insects", 0, None, today, None)
-        ]
-        cursor.executemany(
-            "INSERT INTO words (word, category, successful_days, last_practiced, next_review, user_id) VALUES (?, ?, ?, ?, ?, ?)",
-            test_words
-        )
+    # No default/core words - each family adds their own words
     
     conn.commit()
     conn.close()
@@ -326,9 +313,10 @@ def get_words_for_today():
     conn.close()
     return [_convert_row_to_dict(w, ['id', 'word', 'category', 'successful_days']) for w in words]
 
-def add_word(word: str, category: str, reference_image: str = None):
+def add_word(word: str, category: str, reference_image: str = None, user_id: int = None):
     """
     Phase 5: Add a new word to the database
+    Phase 12: user_id required - all words belong to a family
     """
     conn = get_db()
     cursor = conn.cursor()
@@ -336,9 +324,9 @@ def add_word(word: str, category: str, reference_image: str = None):
     
     try:
         cursor.execute("""
-            INSERT INTO words (word, category, successful_days, next_review)
-            VALUES (?, ?, 0, ?)
-        """, (word.lower(), category, today))
+            INSERT INTO words (word, category, successful_days, next_review, user_id)
+            VALUES (?, ?, 0, ?, ?)
+        """, (word.lower(), category, today, user_id))
         
         word_id = cursor.lastrowid
         
@@ -352,7 +340,7 @@ def add_word(word: str, category: str, reference_image: str = None):
         return word_id
     except sqlite3.IntegrityError:
         conn.close()
-        raise ValueError(f"Word '{word}' already exists")
+        raise ValueError(f"Word '{word}' already exists for your family")
 
 def update_word(word_id: int, word: str = None, category: str = None, reference_image: str = None):
     """
@@ -402,17 +390,19 @@ def delete_word(word_id: int):
     conn.close()
     return affected > 0
 
-def get_all_words_admin():
+def get_all_words_admin(user_id: int):
     """
-    Phase 5: Get all words with full details for admin panel
+    Phase 12: Get all words with full details for user's admin panel
+    Returns only this user's words (user_id must match)
     """
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
         SELECT id, word, category, successful_days, last_practiced, next_review, created_date
         FROM words
+        WHERE user_id = ?
         ORDER BY created_date DESC
-    """)
+    """, (user_id,))
     words = cursor.fetchall()
     conn.close()
     return [_convert_row_to_dict(word, ['id', 'word', 'category', 'successful_days', 'last_practiced', 'next_review', 'created_date']) for word in words]
@@ -699,7 +689,7 @@ def delete_child(child_id: int) -> bool:
 def get_words_for_child(child_id: int):
     """
     Phase 13: Get words available for child with per-child progress
-    Returns core words (user_id IS NULL) + family's custom words
+    Returns only family's own words (no shared core words)
     Uses child_progress table for per-child successful_days tracking
     Only returns words that need practice (next_review <= today)
     """
@@ -716,8 +706,8 @@ def get_words_for_child(child_id: int):
     user_id = result[0]
     today = date.today().isoformat()
     
-    # Get core words + family's custom words with per-child progress
-    # Use child_progress table for successful_days, defaulting to 0 if no entry exists
+    # Get only family's custom words (user_id must match)
+    # Use child_progress table for per-child successful_days tracking
     # Only include words where next_review <= today (ready for practice today)
     # For new children (no cp record), cp.next_review IS NULL so they see all words
     cursor.execute("""
@@ -730,7 +720,7 @@ def get_words_for_child(child_id: int):
     COALESCE(cp.next_review, w.next_review) as next_review
     FROM words w
     LEFT JOIN child_progress cp ON w.id = cp.word_id AND cp.child_id = ?
-    WHERE (w.user_id IS NULL OR w.user_id = ?)
+    WHERE w.user_id = ?
     AND (cp.next_review IS NULL OR cp.next_review <= ?)
     ORDER BY COALESCE(cp.successful_days, 0) ASC, w.word ASC
     """, (child_id, user_id, today))

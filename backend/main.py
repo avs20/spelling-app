@@ -475,9 +475,10 @@ async def submit_practice(
 async def admin_add_word(
     word: str = Form(...),
     category: str = Form(...),
-    reference_image: UploadFile = File(None)
+    reference_image: UploadFile = File(None),
+    user_id: int = Depends(get_current_user)
 ):
-    """Phase 5: Admin endpoint to add new word"""
+    """Phase 12: Admin endpoint to add word for family (requires authentication)"""
     try:
         reference_filename = None
         
@@ -493,7 +494,7 @@ async def admin_add_word(
             with open(filepath, "wb") as f:
                 f.write(contents)
         
-        word_id = add_word(word, category, reference_filename)
+        word_id = add_word(word, category, reference_filename, user_id=user_id)
         
         return {"success": True, "word_id": word_id, "message": f"Word '{word}' added successfully"}
     
@@ -556,10 +557,10 @@ async def admin_delete_word(word_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/admin/words")
-async def admin_get_words():
-    """Phase 5: Admin endpoint to get all words with details"""
+async def admin_get_words(user_id: int = Depends(get_current_user)):
+    """Phase 12: Admin endpoint to get user's words with details (requires authentication)"""
     try:
-        words = get_all_words_admin()
+        words = get_all_words_admin(user_id)
         return {"words": words}
     except Exception as e:
         import traceback
