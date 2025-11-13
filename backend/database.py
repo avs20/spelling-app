@@ -19,13 +19,52 @@ except ImportError:
     LIBSQL_AVAILABLE = False
 
 IS_DOCKER = os.path.exists('/.dockerenv') or os.getenv('FLY_APP_NAME')
+IS_MODAL = os.getenv('MODAL_APP_ID') is not None
 BASE_DIR = '/app' if IS_DOCKER else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, 'data', 'spelling.db')
+
+# Modal uses /modal-data for persistent volume, Fly.io/Docker use /app/data
+DATA_DIR = '/modal-data' if IS_MODAL else os.path.join(BASE_DIR, 'data')
+DB_PATH = os.path.join(DATA_DIR, 'spelling.db')
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
 TURSO_DATABASE_URL = os.getenv('TURSO_DATABASE_URL')
 TURSO_AUTH_TOKEN = os.getenv('TURSO_AUTH_TOKEN')
 USE_TURSO = TURSO_DATABASE_URL and TURSO_AUTH_TOKEN and LIBSQL_AVAILABLE
+
+def _convert_row_to_dict(row, column_names=None):
+    """
+    Convert database row to dictionary.
+    Handles both SQLite Row objects and libSQL tuple results.
+    
+    Args:
+        row: Database row object (Row, tuple, or dict)
+        column_names: List of column names for tuple results. Required for libSQL tuples.
+    
+    Returns:
+        Dictionary representation of the row, or None if row is None
+    """
+    if row is None:
+        return None
+    
+    # Already a dict
+    if isinstance(row, dict):
+        return row
+    
+    # SQLite Row object with keys() method
+    if hasattr(row, 'keys'):
+        return dict(row)
+    
+    # Tuple-like result from libSQL - requires column_names
+    if column_names:
+        return {name: row[i] for i, name in enumerate(column_names)}
+    
+    # Fallback: if no column names provided for tuple, raise error
+    # This helps catch missing column_names arguments
+    if isinstance(row, (tuple, list)):
+        raise ValueError(f"Cannot convert tuple/list to dict without column_names. Row type: {type(row)}, Row: {row}")
+    
+    # Unknown type - return as-is (shouldn't happen)
+    return row
 
 def get_db():
     """
@@ -147,7 +186,7 @@ def get_all_words():
     cursor.execute("SELECT id, word, category FROM words")
     words = cursor.fetchall()
     conn.close()
-    return [dict(word) for word in words]
+    return [_convert_row_to_dict(word, ['id', 'word', 'category']) for word in words]
 
 def get_word_for_practice(practiced_today=None):
     """
@@ -212,7 +251,7 @@ def get_practices_for_word(word_id: int):
     """, (word_id,))
     practices = cursor.fetchall()
     conn.close()
-    return [dict(p) for p in practices]
+    return [_convert_row_to_dict(p, ['id', 'spelled_word', 'is_correct', 'drawing_filename', 'practiced_date']) for p in practices]
 
 def update_word_on_success(word_id: int):
     """
@@ -285,7 +324,7 @@ def get_words_for_today():
     
     words = cursor.fetchall()
     conn.close()
-    return [dict(w) for w in words]
+    return [_convert_row_to_dict(w, ['id', 'word', 'category', 'successful_days']) for w in words]
 
 def add_word(word: str, category: str, reference_image: str = None):
     """
@@ -376,7 +415,7 @@ def get_all_words_admin():
     """)
     words = cursor.fetchall()
     conn.close()
-    return [dict(word) for word in words]
+    return [_convert_row_to_dict(word, ['id', 'word', 'category', 'successful_days', 'last_practiced', 'next_review', 'created_date']) for word in words]
 
 def get_practice_stats():
     """
@@ -568,7 +607,7 @@ def get_user_by_email(email: str):
     cursor.execute("SELECT id, email, password_hash FROM users WHERE email = ?", (email.lower(),))
     user = cursor.fetchone()
     conn.close()
-    return dict(user) if user else None
+    return _convert_row_to_dict(user, ['id', 'email', 'password_hash'])
 
 def get_user_by_id(user_id: int):
     """Get user by ID"""
@@ -577,7 +616,7 @@ def get_user_by_id(user_id: int):
     cursor.execute("SELECT id, email, created_date FROM users WHERE id = ?", (user_id,))
     user = cursor.fetchone()
     conn.close()
-    return dict(user) if user else None
+    return _convert_row_to_dict(user, ['id', 'email', 'created_date'])
 
 def create_child(user_id: int, name: str, age: int = None) -> int:
     """Create child profile. Returns child_id."""
@@ -602,7 +641,7 @@ def get_user_children(user_id: int):
     )
     children = cursor.fetchall()
     conn.close()
-    return [dict(c) for c in children]
+    return [_convert_row_to_dict(c, ['id', 'user_id', 'name', 'age', 'created_date']) for c in children]
 
 def get_child_by_id(child_id: int):
     """Get child by ID"""
@@ -614,7 +653,7 @@ def get_child_by_id(child_id: int):
     )
     child = cursor.fetchone()
     conn.close()
-    return dict(child) if child else None
+    return _convert_row_to_dict(child, ['id', 'user_id', 'name', 'age', 'created_date']) if child else None
 
 def update_child(child_id: int, name: str = None, age: int = None) -> bool:
     """Update child profile"""
@@ -682,23 +721,23 @@ def get_words_for_child(child_id: int):
     # Only include words where next_review <= today (ready for practice today)
     # For new children (no cp record), cp.next_review IS NULL so they see all words
     cursor.execute("""
-        SELECT 
-            w.id, 
-            w.word, 
-            w.category, 
-            COALESCE(cp.successful_days, 0) as successful_days,
-            w.user_id,
-            COALESCE(cp.next_review, w.next_review) as next_review
-        FROM words w
-        LEFT JOIN child_progress cp ON w.id = cp.word_id AND cp.child_id = ?
-        WHERE (w.user_id IS NULL OR w.user_id = ?)
-        AND (cp.next_review IS NULL OR cp.next_review <= ?)
-        ORDER BY COALESCE(cp.successful_days, 0) ASC, w.word ASC
+    SELECT 
+    w.id, 
+    w.word, 
+    w.category, 
+    COALESCE(cp.successful_days, 0) as successful_days,
+    w.user_id,
+    COALESCE(cp.next_review, w.next_review) as next_review
+    FROM words w
+    LEFT JOIN child_progress cp ON w.id = cp.word_id AND cp.child_id = ?
+    WHERE (w.user_id IS NULL OR w.user_id = ?)
+    AND (cp.next_review IS NULL OR cp.next_review <= ?)
+    ORDER BY COALESCE(cp.successful_days, 0) ASC, w.word ASC
     """, (child_id, user_id, today))
     
     words = cursor.fetchall()
     conn.close()
-    return [dict(w) for w in words]
+    return [_convert_row_to_dict(w, ['id', 'word', 'category', 'successful_days', 'user_id', 'next_review']) for w in words]
 
 def update_word_on_success_for_child(word_id: int, child_id: int):
     """

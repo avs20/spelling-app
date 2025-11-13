@@ -59,13 +59,17 @@ current_session = None
 # Determine if running in Docker/production
 import sys
 IS_DOCKER = os.path.exists('/.dockerenv') or os.getenv('FLY_APP_NAME')
+IS_MODAL = os.getenv('MODAL_APP_ID') is not None
 BASE_DIR = '/app' if IS_DOCKER else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Modal uses /modal-data for persistent volume, Fly.io/Docker use /app/data
+DATA_DIR = '/modal-data' if IS_MODAL else os.path.join(BASE_DIR, 'data')
 
 # Serve frontend files
 frontend_dir = os.path.join(BASE_DIR, 'frontend')
 
 # Serve drawings
-drawings_dir = os.path.join(BASE_DIR, 'data', 'drawings')
+drawings_dir = os.path.join(DATA_DIR, 'drawings')
 os.makedirs(drawings_dir, exist_ok=True)
 app.mount("/drawings", StaticFiles(directory=drawings_dir), name="drawings")
 
@@ -421,8 +425,11 @@ async def submit_practice(
     
     try:
         # Save drawing file (use absolute path)
+        # Modal uses /modal-data for persistent volume, Fly.io/Docker use /app/data
+        is_modal_env = os.getenv('MODAL_APP_ID') is not None
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        drawings_dir = os.path.join(base_dir, "data", "drawings")
+        data_dir = '/modal-data' if is_modal_env else os.path.join(base_dir, "data")
+        drawings_dir = os.path.join(data_dir, "drawings")
         os.makedirs(drawings_dir, exist_ok=True)
         
         filename = f"{uuid.uuid4()}.png"
