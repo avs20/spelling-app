@@ -375,6 +375,7 @@ async def next_word(child_id: int = Query(...), user_id: int = Depends(get_curre
                 "word": word_data['word'],
                 "category": word_data['category'],
                 "successful_days": word_data['successful_days'],
+                "reference_image": word_data.get('reference_image'),
                 "session": None
             }
         raise HTTPException(status_code=404, detail="No words available")
@@ -385,31 +386,39 @@ async def next_word(child_id: int = Query(...), user_id: int = Depends(get_curre
     if not word_id:
         raise HTTPException(status_code=404, detail="Session complete - all words mastered")
     
-    word = get_word_by_id(word_id)
-    if not word:
-        raise HTTPException(status_code=404, detail="Word not found")
-    
-    # Get word record for successful_days from child_progress (per-child tracking)
+    # Get word details including reference_image
     from database import get_db
     conn = get_db()
     cursor = conn.cursor()
+    cursor.execute("""
+        SELECT word, category, reference_image
+        FROM words
+        WHERE id = ?
+    """, (word_id,))
+    word_record = cursor.fetchone()
+    
+    # Get word record for successful_days from child_progress (per-child tracking)
     cursor.execute("""
         SELECT successful_days
         FROM child_progress
         WHERE word_id = ? AND child_id = ?
     """, (word_id, child_id))
-    word_data = cursor.fetchone()
+    progress_data = cursor.fetchone()
     conn.close()
     
+    if not word_record:
+        raise HTTPException(status_code=404, detail="Word not found")
+    
     # If no record in child_progress, this child hasn't practiced this word yet
-    successful_days = word_data[0] if word_data else 0
+    successful_days = progress_data[0] if progress_data else 0
     
     stats = current_session.get_session_stats()
     
     return {
         "id": word_id,
-        "word": word[0],
-        "category": word[1],
+        "word": word_record[0],
+        "category": word_record[1],
+        "reference_image": word_record[2],
         "successful_days": successful_days,
         "session": stats
     }
