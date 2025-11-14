@@ -25,4 +25,4 @@ jobs:
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
           TURSO_DATABASE_URL: ${{ secrets.TURSO_PREPROD_DATABASE_URL }}
           TURSO_AUTH_TOKEN: ${{ secrets.TURSO_PREPROD_AUTH_TOKEN }}
-        run: modal deploy modal_app.py
+        run: modal deploy modal_app_preprod.py
