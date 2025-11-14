@@ -13,17 +13,20 @@ from database import get_words_for_today, get_words_for_child
 class WordSession:
     """Manages word queue for a single practice session"""
     
-    def __init__(self, num_words=None, child_id=None):
+    def __init__(self, num_words=None, child_id=None, mastery_threshold=2):
         """
         Initialize session with words from today
         
         Args:
             num_words: Limit words to practice (None = all available)
             child_id: Child ID for filtering words (None = use all words)
+            mastery_threshold: Number of correct answers needed to master a word in session (Issue #16, default 2)
         """
         self.num_words = num_words
         self.child_id = child_id
+        self.mastery_threshold = mastery_threshold
         self.available_words = []  # Words yet to be mastered today
+        self.word_correct_count = {}  # Track correct answers per word (Issue #16)
         self.last_word_id = None  # Track last shown word to prevent consecutive duplicates
         self.mastered_words = set()  # Words completed in this session
         self.session_started = False
@@ -88,17 +91,26 @@ class WordSession:
     
     def mark_word_mastered(self, word_id):
         """
-        Mark word as mastered (correct answer)
-        Word is removed from queue completely
+        Mark word as correct attempt (Issue #16)
+        Word is removed from queue only after reaching mastery_threshold correct answers
         
         Args:
             word_id: ID of word that was spelled correctly
         """
-        if word_id in self.available_words:
-            # Remove from queue completely
-            self.available_words.remove(word_id)
-            # Track as mastered in this session
-            self.mastered_words.add(word_id)
+        # Initialize counter for this word if not already
+        if word_id not in self.word_correct_count:
+            self.word_correct_count[word_id] = 0
+        
+        # Increment correct count for this word
+        self.word_correct_count[word_id] += 1
+        
+        # Only remove from queue if mastery threshold is reached
+        if self.word_correct_count[word_id] >= self.mastery_threshold:
+            if word_id in self.available_words:
+                # Remove from queue completely
+                self.available_words.remove(word_id)
+                # Track as mastered in this session
+                self.mastered_words.add(word_id)
     
     def mark_word_incorrect(self, word_id):
         """

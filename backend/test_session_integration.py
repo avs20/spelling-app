@@ -8,16 +8,16 @@ from session import WordSession
 from database import init_db, get_words_for_today, reset_db_to_initial
 
 def test_session_workflow():
-    """Test complete session workflow"""
+    """Test complete session workflow with default mastery threshold (Issue #16: threshold=2)"""
     init_db()
     reset_db_to_initial()
     
     print("Testing Session Workflow")
     print("=" * 50)
     
-    # Step 1: Create session with 3 words
+    # Step 1: Create session with 3 words (uses default mastery_threshold=2)
     session = WordSession(num_words=3)
-    print(f"\n1. Session created")
+    print(f"\n1. Session created (mastery_threshold={session.mastery_threshold})")
     print(f"   - Total words: 3")
     print(f"   - Available words: {len(session.available_words)}")
     assert len(session.available_words) == 3
@@ -33,7 +33,10 @@ def test_session_workflow():
         
         # Simulate user practicing word - mark all as correct to complete session
         session.mark_word_mastered(word_id)
-        print(f"\n{attempt+1}. Word {word_id} correct ✓ (mastered)")
+        correct_count = session.word_correct_count.get(word_id, 0)
+        is_mastered = word_id in session.mastered_words
+        status = f"mastered (threshold reached)" if is_mastered else f"correct attempt {correct_count}/{session.mastery_threshold}"
+        print(f"\n{attempt+1}. Word {word_id} correct ✓ ({status})")
         
         attempt += 1
         if attempt > 10:

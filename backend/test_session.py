@@ -30,13 +30,19 @@ def test_word_session():
         assert word1 != word2, f"Got consecutive duplicates: {word1}, {word2}"
         print(f"✓ No consecutive duplicates")
     
-    # Mark first word as mastered
+    # Mark first word as correct (Issue #16: needs mastery_threshold correct answers)
     session.mark_word_mastered(word1)
-    print(f"\nMarked word {word1} as mastered")
+    print(f"\nMarked word {word1} as correct (1/{session.mastery_threshold})")
     print(f"Available words now: {session.available_words}")
     print(f"Session stats: {session.get_session_stats()}")
     
-    # Get next word (could be the same word if enough attempts)
+    # Mark as correct again to fully master it
+    session.mark_word_mastered(word1)
+    print(f"\nMarked word {word1} as correct (2/{session.mastery_threshold}) - MASTERED")
+    print(f"Available words now: {session.available_words}")
+    assert word1 not in session.available_words, f"Word {word1} should be removed after mastering"
+    
+    # Get next word
     word3 = session.get_next_word_id()
     print(f"\nThird word: {word3}")
     
