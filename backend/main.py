@@ -20,7 +20,7 @@ from database import (
     get_recent_drawings, reset_db_to_initial, create_user, get_user_by_email,
     verify_password, create_child, get_user_children, get_child_by_id, update_child,
     delete_child, get_words_for_child, update_word_on_success_for_child,
-    get_user_by_id
+    get_user_by_id, get_user_mastery_threshold, update_user_mastery_threshold
 )
 from data_management import (
     cleanup_old_drawings, get_storage_stats, optimize_database, create_backup
@@ -288,6 +288,7 @@ async def start_session(
 ):
     """
     Phase 12: Start a new practice session with optional word limit
+    Issue #16: Use user's configured mastery threshold
     Requires authentication and child_id in localStorage on frontend
     
     Args:
@@ -300,8 +301,11 @@ async def start_session(
     global current_session
     
     try:
-        # Create new session with child_id
-        current_session = WordSession(num_words=num_words, child_id=child_id)
+        # Get user's mastery threshold (Issue #16)
+        mastery_threshold = get_user_mastery_threshold(user_id)
+        
+        # Create new session with child_id and mastery threshold
+        current_session = WordSession(num_words=num_words, child_id=child_id, mastery_threshold=mastery_threshold)
         
         # Get first word
         word_id = current_session.get_next_word_id()
@@ -576,6 +580,39 @@ async def admin_get_words(user_id: int = Depends(get_current_user)):
     try:
         words = get_all_words_admin(user_id)
         return {"words": words}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/admin/mastery-threshold")
+async def admin_get_mastery_threshold(user_id: int = Depends(get_current_user)):
+    """Issue #16: Get user's session mastery threshold (requires authentication)"""
+    try:
+        threshold = get_user_mastery_threshold(user_id)
+        return {"mastery_threshold": threshold}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/mastery-threshold")
+async def admin_set_mastery_threshold(
+    threshold: int = Query(...),
+    user_id: int = Depends(get_current_user)
+):
+    """Issue #16: Set user's session mastery threshold (requires authentication)"""
+    try:
+        if threshold < 1 or threshold > 10:
+            raise HTTPException(status_code=400, detail="Mastery threshold must be between 1 and 10")
+        
+        success = update_user_mastery_threshold(user_id, threshold)
+        if success:
+            return {"success": True, "mastery_threshold": threshold}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to update mastery threshold")
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
         traceback.print_exc()

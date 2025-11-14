@@ -89,11 +89,13 @@ def init_db():
     cursor = conn.cursor()
     
     # Users table - Phase 12: Parent/teacher accounts
+    # Issue #16: Added session_mastery_threshold for configurable word mastery
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
+            session_mastery_threshold INTEGER DEFAULT 2,
             created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -731,6 +733,49 @@ def get_words_for_child(child_id: int):
     words = cursor.fetchall()
     conn.close()
     return [_convert_row_to_dict(w, ['id', 'word', 'category', 'successful_days', 'user_id', 'next_review', 'reference_image']) for w in words]
+
+def get_user_mastery_threshold(user_id: int) -> int:
+    """
+    Issue #16: Get session mastery threshold for a user
+    Returns the number of correct answers needed to master a word in a session
+    Default is 2
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT session_mastery_threshold FROM users WHERE id = ?", (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    
+    if result:
+        # Handle both SQLite Row objects and tuples
+        threshold = result[0] if hasattr(result, '__getitem__') else result
+        return threshold if threshold else 2
+    return 2
+
+def update_user_mastery_threshold(user_id: int, threshold: int) -> bool:
+    """
+    Issue #16: Update session mastery threshold for a user
+    
+    Args:
+        user_id: User ID
+        threshold: Number of correct answers needed (minimum 1)
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    if threshold < 1:
+        return False
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE users SET session_mastery_threshold = ? WHERE id = ?",
+        (threshold, user_id)
+    )
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+    return affected > 0
 
 def update_word_on_success_for_child(word_id: int, child_id: int):
     """
