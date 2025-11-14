@@ -160,6 +160,54 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Reference Image Section (Issue #15: Flashcards) */
+        .image-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .reference-image {
+            max-width: 100%;
+            max-height: 300px;
+            height: auto;
+            border-radius: 8px;
+            object-fit: contain;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        body.dark-mode .image-section {
+            background: #2a2a2a;
+        }
+
+        /* Mobile responsiveness for image section */
+        @media (max-width: 768px) {
+            .image-section {
+                margin-bottom: 20px;
+                padding: 15px;
+            }
+
+            .reference-image {
+                max-height: 250px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .image-section {
+                margin-bottom: 15px;
+                padding: 10px;
+            }
+
+            .reference-image {
+                max-height: 200px;
+            }
+        }
+
         /* Progress badge */
         .progress-badge {
             position: fixed;
@@ -363,19 +411,24 @@
 
     <!-- Session Progress Indicator -->
     <div id="session-indicator" class="session-indicator" style="display: none;">
-        <span id="session-progress">Session: 0/0 words</span>
-        <button class="session-end-btn" onclick="endSession()">End Session</button>
+    <span id="session-progress">Session: 0/0 words</span>
+    <button class="session-end-btn" onclick="endSession()">End Session</button>
     </div>
 
     <!-- Completion Banner -->
     <div id="completion-banner" class="completion-banner" style="display: none;">
-             <h2>🎉 All Words Complete!</h2>
-             <p>You've finished all available words. Great job!</p>
-             <button class="new-session-btn" onclick="showSessionModal()">Start New Session</button>
-         </div>
+    <h2>🎉 All Words Complete!</h2>
+    <p>You've finished all available words. Great job!</p>
+    <button class="new-session-btn" onclick="showSessionModal()">Start New Session</button>
+    </div>
 
-         <!-- Main Content -->
-         <main id="main-content">
+    <!-- Main Content -->
+    <main id="main-content">
+    <!-- Reference Image Section (Issue #15: Flashcards) -->
+            <section id="image-section" class="image-section" style="display: none;">
+                <img id="reference-image" src="" alt="Word reference image" class="reference-image">
+            </section>
+
             <!-- Canvas Section -->
             <section class="canvas-section">
                 <div class="canvas-toolbar">

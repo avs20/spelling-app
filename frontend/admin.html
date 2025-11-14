@@ -386,10 +386,19 @@
                     data.words.forEach(word => {
                         const wordItem = document.createElement('div');
                         wordItem.className = 'word-item';
+                        
+                        // Build image HTML if reference_image exists
+                        const imageHTML = word.reference_image 
+                            ? `<img src="/references/${word.reference_image}" alt="${word.word}" class="word-thumbnail" style="max-width: 60px; max-height: 60px; border-radius: 4px; margin-right: 15px;" />`
+                            : '';
+                        
                         wordItem.innerHTML = `
-                            <div class="word-info">
-                                <h3>${word.word}</h3>
-                                <p>Category: ${word.category} | Successful Days: ${word.successful_days || 0} | Next Review: ${word.next_review || 'N/A'}</p>
+                            <div style="display: flex; align-items: center; flex: 1;">
+                                ${imageHTML}
+                                <div class="word-info">
+                                    <h3>${word.word}</h3>
+                                    <p>Category: ${word.category} | Successful Days: ${word.successful_days || 0} | Next Review: ${word.next_review || 'N/A'}</p>
+                                </div>
                             </div>
                             <div class="word-actions">
                                 <button class="btn btn-danger" onclick="deleteWord(${word.id}, '${word.word}')">Delete</button>
