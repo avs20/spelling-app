@@ -394,18 +394,19 @@ def get_all_words_admin(user_id: int):
     """
     Phase 12: Get all words with full details for user's admin panel
     Returns only this user's words (user_id must match)
+    Includes reference_image for flashcard support (Issue #15)
     """
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT id, word, category, successful_days, last_practiced, next_review, created_date
+        SELECT id, word, category, successful_days, last_practiced, next_review, reference_image, created_date
         FROM words
         WHERE user_id = ?
         ORDER BY created_date DESC
     """, (user_id,))
     words = cursor.fetchall()
     conn.close()
-    return [_convert_row_to_dict(word, ['id', 'word', 'category', 'successful_days', 'last_practiced', 'next_review', 'created_date']) for word in words]
+    return [_convert_row_to_dict(word, ['id', 'word', 'category', 'successful_days', 'last_practiced', 'next_review', 'reference_image', 'created_date']) for word in words]
 
 def get_practice_stats():
     """
@@ -692,6 +693,7 @@ def get_words_for_child(child_id: int):
     Returns only family's own words (no shared core words)
     Uses child_progress table for per-child successful_days tracking
     Only returns words that need practice (next_review <= today)
+    Includes reference_image for flashcard support (Issue #15)
     """
     conn = get_db()
     cursor = conn.cursor()
@@ -717,7 +719,8 @@ def get_words_for_child(child_id: int):
     w.category, 
     COALESCE(cp.successful_days, 0) as successful_days,
     w.user_id,
-    COALESCE(cp.next_review, w.next_review) as next_review
+    COALESCE(cp.next_review, w.next_review) as next_review,
+    w.reference_image
     FROM words w
     LEFT JOIN child_progress cp ON w.id = cp.word_id AND cp.child_id = ?
     WHERE w.user_id = ?
@@ -727,7 +730,7 @@ def get_words_for_child(child_id: int):
     
     words = cursor.fetchall()
     conn.close()
-    return [_convert_row_to_dict(w, ['id', 'word', 'category', 'successful_days', 'user_id', 'next_review']) for w in words]
+    return [_convert_row_to_dict(w, ['id', 'word', 'category', 'successful_days', 'user_id', 'next_review', 'reference_image']) for w in words]
 
 def update_word_on_success_for_child(word_id: int, child_id: int):
     """

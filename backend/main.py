@@ -73,6 +73,11 @@ drawings_dir = os.path.join(DATA_DIR, 'drawings')
 os.makedirs(drawings_dir, exist_ok=True)
 app.mount("/drawings", StaticFiles(directory=drawings_dir), name="drawings")
 
+# Serve reference images (Issue #15: Flashcards)
+references_dir = os.path.join(DATA_DIR, 'references')
+os.makedirs(references_dir, exist_ok=True)
+app.mount("/references", StaticFiles(directory=references_dir), name="references")
+
 # Serve static frontend files (CSS, JS, images)
 # This works identically in both local dev and production (Fly.io)
 app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
