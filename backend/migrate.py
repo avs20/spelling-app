@@ -60,6 +60,13 @@ MIGRATIONS = {
                 FOREIGN KEY (child_id) REFERENCES children(id)
             );
         """
+    },
+    2: {
+        "name": "add_mastery_threshold",
+        "description": "Issue #16: Add session_mastery_threshold to users table",
+        "up": """
+            ALTER TABLE users ADD COLUMN session_mastery_threshold INTEGER DEFAULT 2;
+        """
     }
 }
 

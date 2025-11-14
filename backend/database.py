@@ -3,6 +3,7 @@ Database setup and operations
 SQLite database for words and practices
 Phase 4: Spaced repetition tracking
 Phase 12: Multi-user and multi-child support
+Phase 13: Modal deployment with Turso support
 """
 
 import sqlite3
@@ -11,16 +12,72 @@ import os
 import hashlib
 import secrets
 
+try:
+    import libsql_experimental as libsql
+    LIBSQL_AVAILABLE = True
+except ImportError:
+    LIBSQL_AVAILABLE = False
+
 IS_DOCKER = os.path.exists('/.dockerenv') or os.getenv('FLY_APP_NAME')
+IS_MODAL = os.getenv('MODAL_APP_ID') is not None
 BASE_DIR = '/app' if IS_DOCKER else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, 'data', 'spelling.db')
+
+# Modal uses /modal-data for persistent volume, Fly.io/Docker use /app/data
+DATA_DIR = '/modal-data' if IS_MODAL else os.path.join(BASE_DIR, 'data')
+DB_PATH = os.path.join(DATA_DIR, 'spelling.db')
 os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
 
+TURSO_DATABASE_URL = os.getenv('TURSO_DATABASE_URL')
+TURSO_AUTH_TOKEN = os.getenv('TURSO_AUTH_TOKEN')
+USE_TURSO = TURSO_DATABASE_URL and TURSO_AUTH_TOKEN and LIBSQL_AVAILABLE
+
+def _convert_row_to_dict(row, column_names=None):
+    """
+    Convert database row to dictionary.
+    Handles both SQLite Row objects and libSQL tuple results.
+    
+    Args:
+        row: Database row object (Row, tuple, or dict)
+        column_names: List of column names for tuple results. Required for libSQL tuples.
+    
+    Returns:
+        Dictionary representation of the row, or None if row is None
+    """
+    if row is None:
+        return None
+    
+    # Already a dict
+    if isinstance(row, dict):
+        return row
+    
+    # SQLite Row object with keys() method
+    if hasattr(row, 'keys'):
+        return dict(row)
+    
+    # Tuple-like result from libSQL - requires column_names
+    if column_names:
+        return {name: row[i] for i, name in enumerate(column_names)}
+    
+    # Fallback: if no column names provided for tuple, raise error
+    # This helps catch missing column_names arguments
+    if isinstance(row, (tuple, list)):
+        raise ValueError(f"Cannot convert tuple/list to dict without column_names. Row type: {type(row)}, Row: {row}")
+    
+    # Unknown type - return as-is (shouldn't happen)
+    return row
+
 def get_db():
-    """Get database connection"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    """
+    Get database connection
+    Supports both local SQLite and remote Turso (libSQL)
+    """
+    if USE_TURSO:
+        conn = libsql.connect(TURSO_DATABASE_URL, auth_token=TURSO_AUTH_TOKEN)
+        return conn
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        return conn
 
 def init_db():
     """Initialize database with tables"""
@@ -32,11 +89,13 @@ def init_db():
     cursor = conn.cursor()
     
     # Users table - Phase 12: Parent/teacher accounts
+    # Issue #16: Added session_mastery_threshold for configurable word mastery
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             email TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL,
+            session_mastery_threshold INTEGER DEFAULT 2,
             created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -104,20 +163,7 @@ def init_db():
         )
     """)
     
-    # Insert test words if empty - Phase 4: Initialize with next_review = today
-    # Phase 12: Core words have user_id = NULL
-    cursor.execute("SELECT COUNT(*) FROM words")
-    if cursor.fetchone()[0] == 0:
-        today = date.today().isoformat()
-        test_words = [
-            ("bee", "insects", 0, None, today, None),
-            ("spider", "insects", 0, None, today, None),
-            ("butterfly", "insects", 0, None, today, None)
-        ]
-        cursor.executemany(
-            "INSERT INTO words (word, category, successful_days, last_practiced, next_review, user_id) VALUES (?, ?, ?, ?, ?, ?)",
-            test_words
-        )
+    # No default/core words - each family adds their own words
     
     conn.commit()
     conn.close()
@@ -129,7 +175,7 @@ def get_all_words():
     cursor.execute("SELECT id, word, category FROM words")
     words = cursor.fetchall()
     conn.close()
-    return [dict(word) for word in words]
+    return [_convert_row_to_dict(word, ['id', 'word', 'category']) for word in words]
 
 def get_word_for_practice(practiced_today=None):
     """
@@ -194,7 +240,7 @@ def get_practices_for_word(word_id: int):
     """, (word_id,))
     practices = cursor.fetchall()
     conn.close()
-    return [dict(p) for p in practices]
+    return [_convert_row_to_dict(p, ['id', 'spelled_word', 'is_correct', 'drawing_filename', 'practiced_date']) for p in practices]
 
 def update_word_on_success(word_id: int):
     """
@@ -267,11 +313,12 @@ def get_words_for_today():
     
     words = cursor.fetchall()
     conn.close()
-    return [dict(w) for w in words]
+    return [_convert_row_to_dict(w, ['id', 'word', 'category', 'successful_days']) for w in words]
 
-def add_word(word: str, category: str, reference_image: str = None):
+def add_word(word: str, category: str, reference_image: str = None, user_id: int = None):
     """
     Phase 5: Add a new word to the database
+    Phase 12: user_id required - all words belong to a family
     """
     conn = get_db()
     cursor = conn.cursor()
@@ -279,9 +326,9 @@ def add_word(word: str, category: str, reference_image: str = None):
     
     try:
         cursor.execute("""
-            INSERT INTO words (word, category, successful_days, next_review)
-            VALUES (?, ?, 0, ?)
-        """, (word.lower(), category, today))
+            INSERT INTO words (word, category, successful_days, next_review, user_id)
+            VALUES (?, ?, 0, ?, ?)
+        """, (word.lower(), category, today, user_id))
         
         word_id = cursor.lastrowid
         
@@ -295,7 +342,7 @@ def add_word(word: str, category: str, reference_image: str = None):
         return word_id
     except sqlite3.IntegrityError:
         conn.close()
-        raise ValueError(f"Word '{word}' already exists")
+        raise ValueError(f"Word '{word}' already exists for your family")
 
 def update_word(word_id: int, word: str = None, category: str = None, reference_image: str = None):
     """
@@ -345,20 +392,22 @@ def delete_word(word_id: int):
     conn.close()
     return affected > 0
 
-def get_all_words_admin():
+def get_all_words_admin(user_id: int):
     """
-    Phase 5: Get all words with full details for admin panel
+    Phase 12: Get all words with full details for user's admin panel
+    Returns only this user's words (user_id must match)
     """
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
         SELECT id, word, category, successful_days, last_practiced, next_review, created_date
         FROM words
+        WHERE user_id = ?
         ORDER BY created_date DESC
-    """)
+    """, (user_id,))
     words = cursor.fetchall()
     conn.close()
-    return [dict(word) for word in words]
+    return [_convert_row_to_dict(word, ['id', 'word', 'category', 'successful_days', 'last_practiced', 'next_review', 'created_date']) for word in words]
 
 def get_practice_stats():
     """
@@ -550,7 +599,7 @@ def get_user_by_email(email: str):
     cursor.execute("SELECT id, email, password_hash FROM users WHERE email = ?", (email.lower(),))
     user = cursor.fetchone()
     conn.close()
-    return dict(user) if user else None
+    return _convert_row_to_dict(user, ['id', 'email', 'password_hash'])
 
 def get_user_by_id(user_id: int):
     """Get user by ID"""
@@ -559,7 +608,7 @@ def get_user_by_id(user_id: int):
     cursor.execute("SELECT id, email, created_date FROM users WHERE id = ?", (user_id,))
     user = cursor.fetchone()
     conn.close()
-    return dict(user) if user else None
+    return _convert_row_to_dict(user, ['id', 'email', 'created_date'])
 
 def create_child(user_id: int, name: str, age: int = None) -> int:
     """Create child profile. Returns child_id."""
@@ -584,7 +633,7 @@ def get_user_children(user_id: int):
     )
     children = cursor.fetchall()
     conn.close()
-    return [dict(c) for c in children]
+    return [_convert_row_to_dict(c, ['id', 'user_id', 'name', 'age', 'created_date']) for c in children]
 
 def get_child_by_id(child_id: int):
     """Get child by ID"""
@@ -596,7 +645,7 @@ def get_child_by_id(child_id: int):
     )
     child = cursor.fetchone()
     conn.close()
-    return dict(child) if child else None
+    return _convert_row_to_dict(child, ['id', 'user_id', 'name', 'age', 'created_date']) if child else None
 
 def update_child(child_id: int, name: str = None, age: int = None) -> bool:
     """Update child profile"""
@@ -642,7 +691,7 @@ def delete_child(child_id: int) -> bool:
 def get_words_for_child(child_id: int):
     """
     Phase 13: Get words available for child with per-child progress
-    Returns core words (user_id IS NULL) + family's custom words
+    Returns only family's own words (no shared core words)
     Uses child_progress table for per-child successful_days tracking
     Only returns words that need practice (next_review <= today)
     """
@@ -659,28 +708,71 @@ def get_words_for_child(child_id: int):
     user_id = result[0]
     today = date.today().isoformat()
     
-    # Get core words + family's custom words with per-child progress
-    # Use child_progress table for successful_days, defaulting to 0 if no entry exists
+    # Get only family's custom words (user_id must match)
+    # Use child_progress table for per-child successful_days tracking
     # Only include words where next_review <= today (ready for practice today)
     # For new children (no cp record), cp.next_review IS NULL so they see all words
     cursor.execute("""
-        SELECT 
-            w.id, 
-            w.word, 
-            w.category, 
-            COALESCE(cp.successful_days, 0) as successful_days,
-            w.user_id,
-            COALESCE(cp.next_review, w.next_review) as next_review
-        FROM words w
-        LEFT JOIN child_progress cp ON w.id = cp.word_id AND cp.child_id = ?
-        WHERE (w.user_id IS NULL OR w.user_id = ?)
-        AND (cp.next_review IS NULL OR cp.next_review <= ?)
-        ORDER BY COALESCE(cp.successful_days, 0) ASC, w.word ASC
+    SELECT 
+    w.id, 
+    w.word, 
+    w.category, 
+    COALESCE(cp.successful_days, 0) as successful_days,
+    w.user_id,
+    COALESCE(cp.next_review, w.next_review) as next_review
+    FROM words w
+    LEFT JOIN child_progress cp ON w.id = cp.word_id AND cp.child_id = ?
+    WHERE w.user_id = ?
+    AND (cp.next_review IS NULL OR cp.next_review <= ?)
+    ORDER BY COALESCE(cp.successful_days, 0) ASC, w.word ASC
     """, (child_id, user_id, today))
     
     words = cursor.fetchall()
     conn.close()
-    return [dict(w) for w in words]
+    return [_convert_row_to_dict(w, ['id', 'word', 'category', 'successful_days', 'user_id', 'next_review']) for w in words]
+
+def get_user_mastery_threshold(user_id: int) -> int:
+    """
+    Issue #16: Get session mastery threshold for a user
+    Returns the number of correct answers needed to master a word in a session
+    Default is 2
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT session_mastery_threshold FROM users WHERE id = ?", (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    
+    if result:
+        # Handle both SQLite Row objects and tuples
+        threshold = result[0] if hasattr(result, '__getitem__') else result
+        return threshold if threshold else 2
+    return 2
+
+def update_user_mastery_threshold(user_id: int, threshold: int) -> bool:
+    """
+    Issue #16: Update session mastery threshold for a user
+    
+    Args:
+        user_id: User ID
+        threshold: Number of correct answers needed (minimum 1)
+    
+    Returns:
+        True if successful, False otherwise
+    """
+    if threshold < 1:
+        return False
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE users SET session_mastery_threshold = ? WHERE id = ?",
+        (threshold, user_id)
+    )
+    conn.commit()
+    affected = cursor.rowcount
+    conn.close()
+    return affected > 0
 
 def update_word_on_success_for_child(word_id: int, child_id: int):
     """

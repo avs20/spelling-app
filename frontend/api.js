@@ -7,6 +7,32 @@ const API_BASE = window.location.hostname === 'localhost'
     ? 'http://localhost:8000/api'
     : `${window.location.origin}/api`;
 
+// ===== LOADING INDICATOR =====
+
+let loadingTimeoutId = null;
+
+function showLoading() {
+    // Show loading after 500ms of delay to avoid flashing for fast responses
+    loadingTimeoutId = setTimeout(() => {
+        const loader = document.getElementById('api-loading-overlay');
+        if (loader) {
+            loader.style.display = 'flex';
+        }
+    }, 500);
+}
+
+function hideLoading() {
+    // Clear timeout if still pending
+    if (loadingTimeoutId) {
+        clearTimeout(loadingTimeoutId);
+        loadingTimeoutId = null;
+    }
+    const loader = document.getElementById('api-loading-overlay');
+    if (loader) {
+        loader.style.display = 'none';
+    }
+}
+
 // ===== AUTH TOKEN MANAGEMENT =====
 
 function getAuthToken() {
@@ -98,6 +124,7 @@ class API {
     }
 
     static async getCurrentUser() {
+        showLoading();
         try {
             const response = await fetch(`${API_BASE}/auth/me`, {
                 headers: getAuthHeaders()
@@ -113,6 +140,8 @@ class API {
         } catch (e) {
             console.error('Error fetching current user:', e);
             return null;
+        } finally {
+            hideLoading();
         }
     }
 
@@ -147,6 +176,7 @@ class API {
     }
 
     static async getChildren() {
+        showLoading();
         try {
             const response = await fetch(`${API_BASE}/children`, {
                 headers: getAuthHeaders()
@@ -162,6 +192,8 @@ class API {
         } catch (e) {
             console.error('Error fetching children:', e);
             return { children: [] };
+        } finally {
+            hideLoading();
         }
     }
 
@@ -220,6 +252,7 @@ class API {
     // ===== EXISTING ENDPOINTS (updated with auth) =====
 
     static async getWords() {
+        showLoading();
         try {
             const response = await fetch(`${API_BASE}/words`, {
                 headers: getAuthHeaders()
@@ -235,10 +268,13 @@ class API {
         } catch (e) {
             console.error('Error fetching words:', e);
             return { words: [] };
+        } finally {
+            hideLoading();
         }
     }
 
     static async startSession(numWords = null) {
+        showLoading();
         try {
             const childId = localStorage.getItem('selectedChildId');
             const params = new URLSearchParams();
@@ -264,10 +300,13 @@ class API {
         } catch (e) {
             console.error('Error starting session:', e);
             return null;
+        } finally {
+            hideLoading();
         }
     }
 
     static async getNextWord() {
+        showLoading();
         try {
             const childId = localStorage.getItem('selectedChildId');
             if (!childId) {
@@ -289,10 +328,13 @@ class API {
         } catch (e) {
             console.error('Error fetching next word:', e);
             return null;
+        } finally {
+            hideLoading();
         }
     }
 
     static async submitPractice(wordId, spelledWord, drawingBlob, isCorrect) {
+        showLoading();
         try {
             const formData = new FormData();
             formData.append('word_id', wordId);
@@ -322,6 +364,8 @@ class API {
         } catch (e) {
             console.error('Error submitting practice:', e);
             return { success: false };
+        } finally {
+            hideLoading();
         }
     }
 }
