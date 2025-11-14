@@ -1,9 +1,9 @@
-name: Deploy to Production (Modal)
+name: Deploy to Preprod (Modal)
 
 on:
   push:
     branches:
-      - modal-deployment
+      - preprod
 
 jobs:
   deploy:
@@ -19,10 +19,10 @@ jobs:
       - name: Install Modal
         run: pip install modal
       
-      - name: Deploy to Modal
+      - name: Deploy to Modal (Preprod)
         env:
           MODAL_TOKEN_ID: ${{ secrets.MODAL_TOKEN_ID }}
           MODAL_TOKEN_SECRET: ${{ secrets.MODAL_TOKEN_SECRET }}
-          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
-          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_PREPROD_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_PREPROD_AUTH_TOKEN }}
         run: modal deploy modal_app.py
