@@ -486,19 +486,27 @@ async def submit_practice(
             
             # Update session queue if active
             logger.info(f"[PRACTICE SUBMIT] word_id={word_id}, is_correct={is_correct_bool}, current_session={current_session is not None}")
+            word_mastered = False
             if current_session and current_session.session_started:
                 logger.info(f"[PRACTICE SUBMIT] Using session with mastery_threshold={current_session.mastery_threshold}")
                 if is_correct_bool:
                     current_session.mark_word_mastered(word_id)
                     logger.info(f"[PRACTICE SUBMIT] mark_word_mastered called for word_id={word_id}")
+                    # Check if word is now mastered (reached threshold)
+                    word_mastered = word_id in current_session.mastered_words
+                    logger.info(f"[PRACTICE SUBMIT] word_mastered={word_mastered}, mastered_words={current_session.mastered_words}")
                 else:
                     current_session.mark_word_incorrect(word_id)
             else:
                 logger.warning(f"[PRACTICE SUBMIT] No active session! current_session={current_session}")
             
-            # Update word progress if correct (per-child tracking)
-            if is_correct_bool:
+            # Only update word progress if word is actually mastered (reached threshold)
+            # This prevents the word from being hidden from the session before mastery
+            if is_correct_bool and word_mastered:
+                logger.info(f"[PRACTICE SUBMIT] Word mastered! Updating progress for word_id={word_id}")
                 update_word_on_success_for_child(word_id, child_id)
+            elif is_correct_bool:
+                logger.info(f"[PRACTICE SUBMIT] Word not yet mastered. Not updating progress to keep it available for more practice.")
         else:
             raise Exception("Word not found")
         
