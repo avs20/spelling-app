@@ -25,7 +25,8 @@ from database import (
     get_recent_drawings, reset_db_to_initial, create_user, get_user_by_email,
     verify_password, create_child, get_user_children, get_child_by_id, update_child,
     delete_child, get_words_for_child, update_word_on_success_for_child,
-    get_user_by_id, get_user_mastery_threshold, update_user_mastery_threshold
+    get_user_by_id, get_user_mastery_threshold, update_user_mastery_threshold,
+    update_word_on_correct_answer
 )
 from data_management import (
     cleanup_old_drawings, get_storage_stats, optimize_database, create_backup
@@ -456,10 +457,15 @@ async def submit_practice(
     user_id: int = Depends(get_current_user)
 ):
     """
-    Phase 12: Submit practice - save drawing + spelling (requires authentication)
-    """
-    global current_session
+    Phase 14: Submit practice - database-backed daily mastery tracking
     
+    Saves drawing + spelling, and on correct answers:
+    - Increments correct_count_today in database
+    - When correct_count_today >= mastery_threshold: word is mastered (scheduled for review in future)
+    - Otherwise: keeps word in queue for today (next_review = today)
+    
+    This eliminates the need for global session state and works across multiple workers.
+    """
     try:
         # Save drawing file (use absolute path)
         # Modal uses /modal-data for persistent volume, Fly.io/Docker use /app/data
@@ -484,29 +490,19 @@ async def submit_practice(
             
             save_practice(word_id, child_id, spelled_word, is_correct_bool, filename)
             
-            # Update session queue if active
-            logger.info(f"[PRACTICE SUBMIT] word_id={word_id}, is_correct={is_correct_bool}, current_session={current_session is not None}")
-            word_mastered = False
-            if current_session and current_session.session_started:
-                logger.info(f"[PRACTICE SUBMIT] Using session with mastery_threshold={current_session.mastery_threshold}")
-                if is_correct_bool:
-                    current_session.mark_word_mastered(word_id)
-                    logger.info(f"[PRACTICE SUBMIT] mark_word_mastered called for word_id={word_id}")
-                    # Check if word is now mastered (reached threshold)
-                    word_mastered = word_id in current_session.mastered_words
-                    logger.info(f"[PRACTICE SUBMIT] word_mastered={word_mastered}, mastered_words={current_session.mastered_words}")
-                else:
-                    current_session.mark_word_incorrect(word_id)
+            # Phase 14: On correct answer, update database with daily mastery tracking
+            if is_correct_bool:
+                # Get mastery threshold for this user
+                mastery_threshold = get_user_mastery_threshold(user_id)
+                logger.info(f"[PRACTICE] word_id={word_id}, child_id={child_id}, mastery_threshold={mastery_threshold}")
+                
+                # Update word progress in database (increments correct_count_today)
+                # Returns True if word was mastered (reached threshold)
+                word_mastered = update_word_on_correct_answer(word_id, child_id, mastery_threshold)
+                
+                logger.info(f"[PRACTICE] word_id={word_id} mastered={word_mastered}")
             else:
-                logger.warning(f"[PRACTICE SUBMIT] No active session! current_session={current_session}")
-            
-            # Only update word progress if word is actually mastered (reached threshold)
-            # This prevents the word from being hidden from the session before mastery
-            if is_correct_bool and word_mastered:
-                logger.info(f"[PRACTICE SUBMIT] Word mastered! Updating progress for word_id={word_id}")
-                update_word_on_success_for_child(word_id, child_id)
-            elif is_correct_bool:
-                logger.info(f"[PRACTICE SUBMIT] Word not yet mastered. Not updating progress to keep it available for more practice.")
+                logger.info(f"[PRACTICE] word_id={word_id} incorrect - no database update")
         else:
             raise Exception("Word not found")
         

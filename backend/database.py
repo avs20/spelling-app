@@ -79,6 +79,17 @@ def get_db():
         conn.row_factory = sqlite3.Row
         return conn
 
+def _add_column_if_missing(conn, table: str, column: str, column_def: str):
+    """Helper to add column to table if it doesn't exist"""
+    cursor = conn.cursor()
+    try:
+        # Try to query the column - will fail if it doesn't exist
+        cursor.execute(f"SELECT {column} FROM {table} LIMIT 1")
+    except:
+        # Column doesn't exist, add it
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {column_def}")
+        conn.commit()
+
 def init_db():
     """Initialize database with tables"""
     # Ensure database directory exists
@@ -148,12 +159,14 @@ def init_db():
     
     # Child Progress table - Phase 13: Per-child word progress tracking
     # Tracks successful_days per child to fix multi-child isolation bug
+    # Phase 14: Added correct_count_today to track daily correct answers per word
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS child_progress (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             child_id INTEGER NOT NULL,
             word_id INTEGER NOT NULL,
             successful_days INTEGER DEFAULT 0,
+            correct_count_today INTEGER DEFAULT 0,
             last_practiced DATE,
             next_review DATE,
             created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -164,6 +177,10 @@ def init_db():
     """)
     
     # No default/core words - each family adds their own words
+    
+    # Phase 14: Add correct_count_today column if missing (for existing databases)
+    # This runs after tables are created
+    _add_column_if_missing(conn, 'child_progress', 'correct_count_today', 'INTEGER DEFAULT 0')
     
     conn.commit()
     conn.close()
@@ -778,10 +795,91 @@ def update_user_mastery_threshold(user_id: int, threshold: int) -> bool:
     conn.close()
     return affected > 0
 
+def update_word_on_correct_answer(word_id: int, child_id: int, mastery_threshold: int) -> bool:
+    """
+    Phase 14: Update word progress on each correct answer (database-backed daily tracking)
+    
+    Increments correct_count_today for the word.
+    When correct_count_today >= mastery_threshold:
+      - Sets next_review to future date (word is mastered)
+    Otherwise:
+      - Keeps next_review as today (word stays in queue for more practice)
+    
+    Args:
+        word_id: Word ID
+        child_id: Child ID
+        mastery_threshold: Number of correct answers needed to master a word
+    
+    Returns:
+        bool: True if word was mastered (reached threshold), False otherwise
+    """
+    conn = get_db()
+    cursor = conn.cursor()
+    today = date.today().isoformat()
+    
+    # Check if child_progress record exists for this child/word
+    cursor.execute("""
+        SELECT correct_count_today, last_practiced, next_review FROM child_progress 
+        WHERE child_id = ? AND word_id = ?
+    """, (child_id, word_id))
+    row = cursor.fetchone()
+    
+    if row:
+        # Record exists
+        current_count, last_practiced, current_next_review = row
+        
+        # Reset daily counter if it's a new day
+        if last_practiced != today:
+            correct_count_today = 1
+        else:
+            correct_count_today = current_count + 1
+    else:
+        # No record yet, create one
+        correct_count_today = 1
+        current_next_review = today
+    
+    # Determine if word is mastered based on correct_count_today
+    word_mastered = correct_count_today >= mastery_threshold
+    
+    # Calculate next_review based on mastery status
+    if word_mastered:
+        # Word is mastered - schedule for review in 3 days
+        next_review = (date.today() + timedelta(days=3)).isoformat()
+    else:
+        # Word not yet mastered - keep in queue for today
+        next_review = today
+    
+    # Get successful_days from word table (for long-term tracking)
+    cursor.execute("SELECT successful_days FROM words WHERE id = ?", (word_id,))
+    word_row = cursor.fetchone()
+    new_successful_days = (word_row[0] if word_row else 0) + (1 if word_mastered else 0)
+    
+    # Insert or update child_progress record
+    if row:
+        # Update existing record
+        cursor.execute("""
+            UPDATE child_progress
+            SET correct_count_today = ?, last_practiced = ?, next_review = ?
+            WHERE child_id = ? AND word_id = ?
+        """, (correct_count_today, today, next_review, child_id, word_id))
+    else:
+        # Insert new record
+        cursor.execute("""
+            INSERT INTO child_progress (child_id, word_id, correct_count_today, last_practiced, next_review, successful_days)
+            VALUES (?, ?, ?, ?, ?, 0)
+        """, (child_id, word_id, correct_count_today, today, next_review))
+    
+    conn.commit()
+    conn.close()
+    return word_mastered
+
 def update_word_on_success_for_child(word_id: int, child_id: int):
     """
     Phase 13: Update word progress after successful practice for a child
     Updates child_progress table for per-child tracking
+    
+    DEPRECATED: Use update_word_on_correct_answer instead.
+    This function is kept for backwards compatibility but should not be used.
     """
     conn = get_db()
     cursor = conn.cursor()
@@ -819,7 +917,7 @@ def update_word_on_success_for_child(word_id: int, child_id: int):
     # Increment successful_days
     new_successful_days = current_successful_days + 1
     
-    # Calculate next_review
+    # Calculate next_review based on successful_days
     if new_successful_days == 1:
         next_review = (date.today() + timedelta(days=2)).isoformat()
     elif new_successful_days >= 2:
