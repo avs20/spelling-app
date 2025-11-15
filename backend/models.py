@@ -59,6 +59,7 @@ class WordResponse(BaseModel):
     successful_days: int
     next_review: Optional[str] = None
     user_id: Optional[int] = None
+    reference_image: Optional[str] = None
 
 class AddWordRequest(BaseModel):
     """Add word request"""

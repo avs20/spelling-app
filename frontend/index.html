@@ -19,6 +19,195 @@
             animation: celebrate 0.6s ease-in-out;
         }
 
+        /* Profile Dropdown Menu */
+        .profile-menu-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .profile-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s;
+        }
+
+        .profile-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .profile-dropdown {
+            position: absolute;
+            top: 60px;
+            right: 0;
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            min-width: 200px;
+            z-index: 1001;
+            display: none;
+            overflow: hidden;
+        }
+
+        .profile-dropdown.active {
+            display: block;
+        }
+
+        .dropdown-menu-item {
+            display: block;
+            width: 100%;
+            padding: 12px 16px;
+            text-align: left;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #333;
+            text-decoration: none;
+            transition: background-color 0.2s;
+            font-size: 14px;
+        }
+
+        .dropdown-menu-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .dropdown-menu-item a {
+            display: block;
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .dropdown-divider {
+            height: 1px;
+            background-color: #e0e0e0;
+            margin: 0;
+        }
+
+        .logout-item {
+            color: #e74c3c;
+        }
+
+        .logout-item:hover {
+            background-color: #fee;
+        }
+
+        body.dark-mode .profile-dropdown {
+            background: #2a2a2a;
+            border-color: #444;
+        }
+
+        body.dark-mode .dropdown-menu-item {
+            color: #fff;
+        }
+
+        body.dark-mode .dropdown-menu-item:hover {
+            background-color: #3a3a3a;
+        }
+
+        body.dark-mode .dropdown-divider {
+            background-color: #444;
+        }
+
+        body.dark-mode .logout-item:hover {
+            background-color: #5a2a2a;
+        }
+
+        /* Loading Overlay */
+        #api-loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(2px);
+            z-index: 2000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Reference Image Section (Issue #15: Flashcards) */
+        .image-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .reference-image {
+            max-width: 100%;
+            max-height: 300px;
+            height: auto;
+            border-radius: 8px;
+            object-fit: contain;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        body.dark-mode .image-section {
+            background: #2a2a2a;
+        }
+
+        /* Mobile responsiveness for image section */
+        @media (max-width: 768px) {
+            .image-section {
+                margin-bottom: 20px;
+                padding: 15px;
+            }
+
+            .reference-image {
+                max-height: 250px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .image-section {
+                margin-bottom: 15px;
+                padding: 10px;
+            }
+
+            .reference-image {
+                max-height: 200px;
+            }
+        }
+
         /* Progress badge */
         .progress-badge {
             position: fixed;
@@ -173,6 +362,12 @@
     </style>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div id="api-loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading...</div>
+    </div>
+
     <div class="container">
     <!-- Session Start Modal -->
     <div id="session-modal" class="modal" style="display: none;">
@@ -192,27 +387,48 @@
     <header>
     <h1>Learn & Draw</h1>
     <p id="word-display" class="word-title">Loading...</p>
-    <div style="position: absolute; top: 20px; right: 20px; font-size: 14px;">
-         <a href="/user-profile" style="color: #667eea; text-decoration: none; margin-right: 10px;">👤 Profile</a>
-         <button onclick="logout()" style="background: none; border: none; color: #667eea; cursor: pointer; text-decoration: underline;">Logout</button>
+    <div style="position: absolute; top: 20px; right: 20px;">
+         <div class="profile-menu-container">
+             <button class="profile-btn" id="profile-btn" title="User Menu">👤</button>
+             <div class="profile-dropdown" id="profile-dropdown">
+                 <button class="dropdown-menu-item" onclick="goToProfile()">
+                     📋 Profile
+                 </button>
+                 <button class="dropdown-menu-item" onclick="goToAdmin()">
+                     ⚙️ Admin
+                 </button>
+                 <button class="dropdown-menu-item" onclick="goToDashboard()">
+                     📊 Dashboard
+                 </button>
+                 <div class="dropdown-divider"></div>
+                 <button class="dropdown-menu-item logout-item" onclick="logout()">
+                     🚪 Logout
+                 </button>
+             </div>
+         </div>
      </div>
      </header>
 
     <!-- Session Progress Indicator -->
     <div id="session-indicator" class="session-indicator" style="display: none;">
-        <span id="session-progress">Session: 0/0 words</span>
-        <button class="session-end-btn" onclick="endSession()">End Session</button>
+    <span id="session-progress">Session: 0/0 words</span>
+    <button class="session-end-btn" onclick="endSession()">End Session</button>
     </div>
 
     <!-- Completion Banner -->
     <div id="completion-banner" class="completion-banner" style="display: none;">
-             <h2>🎉 All Words Complete!</h2>
-             <p>You've finished all available words. Great job!</p>
-             <button class="new-session-btn" onclick="showSessionModal()">Start New Session</button>
-         </div>
+    <h2>🎉 All Words Complete!</h2>
+    <p>You've finished all available words. Great job!</p>
+    <button class="new-session-btn" onclick="showSessionModal()">Start New Session</button>
+    </div>
 
-         <!-- Main Content -->
-         <main id="main-content">
+    <!-- Main Content -->
+    <main id="main-content">
+    <!-- Reference Image Section (Issue #15: Flashcards) -->
+            <section id="image-section" class="image-section" style="display: none;">
+                <img id="reference-image" src="" alt="Word reference image" class="reference-image">
+            </section>
+
             <!-- Canvas Section -->
             <section class="canvas-section">
                 <div class="canvas-toolbar">
@@ -404,6 +620,47 @@
         localStorage.removeItem('selectedChildId');
         window.location.href = '/login';
         }
+
+        function goToProfile() {
+            closeProfileDropdown();
+            window.location.href = '/user-profile';
+        }
+
+        function goToAdmin() {
+            closeProfileDropdown();
+            window.location.href = '/admin';
+        }
+
+        function goToDashboard() {
+            closeProfileDropdown();
+            window.location.href = '/dashboard';
+        }
+
+        function toggleProfileDropdown() {
+            const dropdown = document.getElementById('profile-dropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        function closeProfileDropdown() {
+            const dropdown = document.getElementById('profile-dropdown');
+            dropdown.classList.remove('active');
+        }
+
+        // Profile button click handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const profileBtn = document.getElementById('profile-btn');
+            if (profileBtn) {
+                profileBtn.addEventListener('click', toggleProfileDropdown);
+            }
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                const container = document.querySelector('.profile-menu-container');
+                if (container && !container.contains(event.target)) {
+                    closeProfileDropdown();
+                }
+            });
+        });
 
         // Auth check on page load
         window.addEventListener('load', ensureAuthenticated);

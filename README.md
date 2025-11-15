@@ -134,6 +134,15 @@ A tablet-friendly web app for children to practice spelling while drawing object
 - **Database Migrations** - Automatic schema updates with migration system
 - **Responsive Design** - Auth pages work on mobile, tablet, and desktop
 
+**Phase 12+ - Reference Images (Flashcard Support):**
+- **Image Upload** - Upload reference images when adding words in admin panel
+- **Image Storage** - Save images to `/data/references/` with unique filenames
+- **API Support** - Reference image filename returned in `/api/next-word` endpoint
+- **Frontend Display** - Images display above canvas during practice sessions
+- **Graceful Fallback** - Words without images work normally (image section hidden)
+- **Responsive Images** - Scales appropriately for different screen sizes
+- **Static Serving** - Images served via `/references/` endpoint with proper caching
+
 ---
 
 ## Project Structure

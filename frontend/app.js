@@ -31,6 +31,10 @@ class SpellingApp {
         this.feedbackMessage = document.getElementById('feedback-message');
         this.mainContent = document.getElementById('main-content');
         this.completionBanner = document.getElementById('completion-banner');
+        
+        // Issue #15: Image section for flashcards
+        this.imageSection = document.getElementById('image-section');
+        this.referenceImage = document.getElementById('reference-image');
 
         this.undoBtn = document.getElementById('undo-btn');
         this.redoBtn = document.getElementById('redo-btn');
@@ -93,6 +97,10 @@ class SpellingApp {
         this.practicedWordsToday.add(this.currentWordId);  // Phase 4: Mark as practiced today
 
         this.wordDisplay.textContent = this.currentWord;
+        
+        // Issue #15: Display reference image if available
+        this.displayReferenceImage(wordData.reference_image);
+        
         this.renderLetters();
         this.updateSpelledDisplay();
         this.updateModeIndicator();
@@ -123,6 +131,27 @@ class SpellingApp {
         }
         if (this.completionBanner) {
             this.completionBanner.style.display = 'none';
+        }
+    }
+
+    displayReferenceImage(imageFilename) {
+        /**
+         * Issue #15: Display reference image for flashcard learning
+         * Shows image only if it exists, otherwise hides the section
+         */
+        if (imageFilename) {
+            // Construct the image URL
+            const API_BASE = window.location.hostname === 'localhost'
+                ? 'http://localhost:8000'
+                : window.location.origin;
+            const imageUrl = `${API_BASE}/references/${imageFilename}`;
+            
+            this.referenceImage.src = imageUrl;
+            this.referenceImage.alt = `Reference image for ${this.currentWord}`;
+            this.imageSection.style.display = 'flex';
+        } else {
+            // Hide image section if no image available
+            this.imageSection.style.display = 'none';
         }
     }
 

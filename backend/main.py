@@ -20,7 +20,7 @@ from database import (
     get_recent_drawings, reset_db_to_initial, create_user, get_user_by_email,
     verify_password, create_child, get_user_children, get_child_by_id, update_child,
     delete_child, get_words_for_child, update_word_on_success_for_child,
-    get_user_by_id
+    get_user_by_id, get_user_mastery_threshold, update_user_mastery_threshold
 )
 from data_management import (
     cleanup_old_drawings, get_storage_stats, optimize_database, create_backup
@@ -59,15 +59,24 @@ current_session = None
 # Determine if running in Docker/production
 import sys
 IS_DOCKER = os.path.exists('/.dockerenv') or os.getenv('FLY_APP_NAME')
+IS_MODAL = os.getenv('MODAL_APP_ID') is not None
 BASE_DIR = '/app' if IS_DOCKER else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Modal uses /modal-data for persistent volume, Fly.io/Docker use /app/data
+DATA_DIR = '/modal-data' if IS_MODAL else os.path.join(BASE_DIR, 'data')
 
 # Serve frontend files
 frontend_dir = os.path.join(BASE_DIR, 'frontend')
 
 # Serve drawings
-drawings_dir = os.path.join(BASE_DIR, 'data', 'drawings')
+drawings_dir = os.path.join(DATA_DIR, 'drawings')
 os.makedirs(drawings_dir, exist_ok=True)
 app.mount("/drawings", StaticFiles(directory=drawings_dir), name="drawings")
+
+# Serve reference images (Issue #15: Flashcards)
+references_dir = os.path.join(DATA_DIR, 'references')
+os.makedirs(references_dir, exist_ok=True)
+app.mount("/references", StaticFiles(directory=references_dir), name="references")
 
 # Serve static frontend files (CSS, JS, images)
 # This works identically in both local dev and production (Fly.io)
@@ -279,6 +288,7 @@ async def start_session(
 ):
     """
     Phase 12: Start a new practice session with optional word limit
+    Issue #16: Use user's configured mastery threshold
     Requires authentication and child_id in localStorage on frontend
     
     Args:
@@ -291,8 +301,11 @@ async def start_session(
     global current_session
     
     try:
-        # Create new session with child_id
-        current_session = WordSession(num_words=num_words, child_id=child_id)
+        # Get user's mastery threshold (Issue #16)
+        mastery_threshold = get_user_mastery_threshold(user_id)
+        
+        # Create new session with child_id and mastery threshold
+        current_session = WordSession(num_words=num_words, child_id=child_id, mastery_threshold=mastery_threshold)
         
         # Get first word
         word_id = current_session.get_next_word_id()
@@ -366,6 +379,7 @@ async def next_word(child_id: int = Query(...), user_id: int = Depends(get_curre
                 "word": word_data['word'],
                 "category": word_data['category'],
                 "successful_days": word_data['successful_days'],
+                "reference_image": word_data.get('reference_image'),
                 "session": None
             }
         raise HTTPException(status_code=404, detail="No words available")
@@ -374,33 +388,53 @@ async def next_word(child_id: int = Query(...), user_id: int = Depends(get_curre
     word_id = current_session.get_next_word_id()
     
     if not word_id:
-        raise HTTPException(status_code=404, detail="Session complete - all words mastered")
+        # Session exhausted - check if fresh words were added (e.g., via admin panel)
+        words = get_words_for_child(child_id)
+        if words:
+            word_data = words[0]
+            return {
+                "id": word_data['id'],
+                "word": word_data['word'],
+                "category": word_data['category'],
+                "successful_days": word_data['successful_days'],
+                "reference_image": word_data.get('reference_image'),
+                "session": None
+            }
+        raise HTTPException(status_code=404, detail="No words available")
     
-    word = get_word_by_id(word_id)
-    if not word:
-        raise HTTPException(status_code=404, detail="Word not found")
-    
-    # Get word record for successful_days from child_progress (per-child tracking)
+    # Get word details including reference_image
     from database import get_db
     conn = get_db()
     cursor = conn.cursor()
+    cursor.execute("""
+        SELECT word, category, reference_image
+        FROM words
+        WHERE id = ?
+    """, (word_id,))
+    word_record = cursor.fetchone()
+    
+    # Get word record for successful_days from child_progress (per-child tracking)
     cursor.execute("""
         SELECT successful_days
         FROM child_progress
         WHERE word_id = ? AND child_id = ?
     """, (word_id, child_id))
-    word_data = cursor.fetchone()
+    progress_data = cursor.fetchone()
     conn.close()
     
+    if not word_record:
+        raise HTTPException(status_code=404, detail="Word not found")
+    
     # If no record in child_progress, this child hasn't practiced this word yet
-    successful_days = word_data[0] if word_data else 0
+    successful_days = progress_data[0] if progress_data else 0
     
     stats = current_session.get_session_stats()
     
     return {
         "id": word_id,
-        "word": word[0],
-        "category": word[1],
+        "word": word_record[0],
+        "category": word_record[1],
+        "reference_image": word_record[2],
         "successful_days": successful_days,
         "session": stats
     }
@@ -421,8 +455,11 @@ async def submit_practice(
     
     try:
         # Save drawing file (use absolute path)
+        # Modal uses /modal-data for persistent volume, Fly.io/Docker use /app/data
+        is_modal_env = os.getenv('MODAL_APP_ID') is not None
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        drawings_dir = os.path.join(base_dir, "data", "drawings")
+        data_dir = '/modal-data' if is_modal_env else os.path.join(base_dir, "data")
+        drawings_dir = os.path.join(data_dir, "drawings")
         os.makedirs(drawings_dir, exist_ok=True)
         
         filename = f"{uuid.uuid4()}.png"
@@ -468,9 +505,10 @@ async def submit_practice(
 async def admin_add_word(
     word: str = Form(...),
     category: str = Form(...),
-    reference_image: UploadFile = File(None)
+    reference_image: UploadFile = File(None),
+    user_id: int = Depends(get_current_user)
 ):
-    """Phase 5: Admin endpoint to add new word"""
+    """Phase 12: Admin endpoint to add word for family (requires authentication)"""
     try:
         reference_filename = None
         
@@ -486,7 +524,7 @@ async def admin_add_word(
             with open(filepath, "wb") as f:
                 f.write(contents)
         
-        word_id = add_word(word, category, reference_filename)
+        word_id = add_word(word, category, reference_filename, user_id=user_id)
         
         return {"success": True, "word_id": word_id, "message": f"Word '{word}' added successfully"}
     
@@ -549,11 +587,44 @@ async def admin_delete_word(word_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/admin/words")
-async def admin_get_words():
-    """Phase 5: Admin endpoint to get all words with details"""
+async def admin_get_words(user_id: int = Depends(get_current_user)):
+    """Phase 12: Admin endpoint to get user's words with details (requires authentication)"""
     try:
-        words = get_all_words_admin()
+        words = get_all_words_admin(user_id)
         return {"words": words}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/admin/mastery-threshold")
+async def admin_get_mastery_threshold(user_id: int = Depends(get_current_user)):
+    """Issue #16: Get user's session mastery threshold (requires authentication)"""
+    try:
+        threshold = get_user_mastery_threshold(user_id)
+        return {"mastery_threshold": threshold}
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/admin/mastery-threshold")
+async def admin_set_mastery_threshold(
+    threshold: int = Query(...),
+    user_id: int = Depends(get_current_user)
+):
+    """Issue #16: Set user's session mastery threshold (requires authentication)"""
+    try:
+        if threshold < 1 or threshold > 10:
+            raise HTTPException(status_code=400, detail="Mastery threshold must be between 1 and 10")
+        
+        success = update_user_mastery_threshold(user_id, threshold)
+        if success:
+            return {"success": True, "mastery_threshold": threshold}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to update mastery threshold")
+    except HTTPException:
+        raise
     except Exception as e:
         import traceback
         traceback.print_exc()

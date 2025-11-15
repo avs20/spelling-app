@@ -9,9 +9,13 @@ from PIL import Image
 import io
 
 IS_DOCKER = os.path.exists('/.dockerenv') or os.getenv('FLY_APP_NAME')
+IS_MODAL = os.getenv('MODAL_APP_ID') is not None
 BASE_DIR = '/app' if IS_DOCKER else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DB_PATH = os.path.join(BASE_DIR, 'data', 'spelling.db')
-DRAWINGS_DIR = os.path.join(BASE_DIR, 'data', 'drawings')
+
+# Modal uses /modal-data for persistent volume, Fly.io/Docker use /app/data
+DATA_DIR = '/modal-data' if IS_MODAL else os.path.join(BASE_DIR, 'data')
+DB_PATH = os.path.join(DATA_DIR, 'spelling.db')
+DRAWINGS_DIR = os.path.join(DATA_DIR, 'drawings')
 
 
 def compress_drawing(filename):
