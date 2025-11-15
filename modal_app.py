@@ -16,9 +16,6 @@ volume = modal.Volume.from_name("spelling-app-data", create_if_missing=True)
 @app.function(
     image=image,
     volumes={"/modal-data": volume},
-    secrets=[
-        modal.Secret.from_name("turso-credentials")
-    ],
     min_containers=1,
     timeout=300,
 )
@@ -41,7 +38,6 @@ def fastapi_app():
 @app.function(
     image=image,
     schedule=modal.Cron("*/5 * * * *"),
-    secrets=[modal.Secret.from_name("turso-credentials")],
 )
 def keep_warm():
     """
