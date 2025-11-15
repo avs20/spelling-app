@@ -388,7 +388,19 @@ async def next_word(child_id: int = Query(...), user_id: int = Depends(get_curre
     word_id = current_session.get_next_word_id()
     
     if not word_id:
-        raise HTTPException(status_code=404, detail="Session complete - all words mastered")
+        # Session exhausted - check if fresh words were added (e.g., via admin panel)
+        words = get_words_for_child(child_id)
+        if words:
+            word_data = words[0]
+            return {
+                "id": word_data['id'],
+                "word": word_data['word'],
+                "category": word_data['category'],
+                "successful_days": word_data['successful_days'],
+                "reference_image": word_data.get('reference_image'),
+                "session": None
+            }
+        raise HTTPException(status_code=404, detail="No words available")
     
     # Get word details including reference_image
     from database import get_db

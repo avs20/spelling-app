@@ -708,7 +708,7 @@ def get_words_for_child(child_id: int):
         return []
     
     # Handle both SQLite Row objects and Turso tuples
-    user_id = result[0] if isinstance(result, (tuple, list)) else result.get('user_id')
+    user_id = result[0] if isinstance(result, (tuple, list)) else result['user_id']
     today = date.today().isoformat()
     
     # Get only family's custom words (user_id must match)
