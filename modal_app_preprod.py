@@ -18,8 +18,8 @@ volume = modal.Volume.from_name("spelling-app-preprod-data", create_if_missing=T
     image=image,
     volumes={"/modal-data": volume},
     env={
-        "TURSO_DATABASE_URL": os.getenv("TURSO_DATABASE_URL"),
-        "TURSO_AUTH_TOKEN": os.getenv("TURSO_AUTH_TOKEN"),
+        "TURSO_DATABASE_URL": os.getenv("TURSO_PREPROD_DATABASE_URL"),
+        "TURSO_AUTH_TOKEN": os.getenv("TURSO_PREPROD_AUTH_TOKEN"),
     },
     min_containers=1,
     timeout=300,
@@ -44,8 +44,8 @@ def fastapi_app():
     image=image,
     schedule=modal.Cron("*/5 * * * *"),
     env={
-        "TURSO_DATABASE_URL": os.getenv("TURSO_DATABASE_URL"),
-        "TURSO_AUTH_TOKEN": os.getenv("TURSO_AUTH_TOKEN"),
+        "TURSO_DATABASE_URL": os.getenv("TURSO_PREPROD_DATABASE_URL"),
+        "TURSO_AUTH_TOKEN": os.getenv("TURSO_PREPROD_AUTH_TOKEN"),
     },
 )
 def keep_warm():
