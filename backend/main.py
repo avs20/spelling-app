@@ -12,7 +12,12 @@ from pydantic import BaseModel
 from datetime import datetime
 import os
 import uuid
+import logging
 from typing import Optional
+
+# Setup logging to debug session state
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 from database import (
     init_db, get_word_for_practice, save_practice, get_all_words, get_word_by_id,
     update_word_on_success, get_words_for_today, add_word, update_word, delete_word,
@@ -303,9 +308,11 @@ async def start_session(
     try:
         # Get user's mastery threshold (Issue #16)
         mastery_threshold = get_user_mastery_threshold(user_id)
+        logger.info(f"[SESSION START] user_id={user_id}, mastery_threshold={mastery_threshold}, child_id={child_id}")
         
         # Create new session with child_id and mastery threshold
         current_session = WordSession(num_words=num_words, child_id=child_id, mastery_threshold=mastery_threshold)
+        logger.info(f"[SESSION START] Session created with mastery_threshold={current_session.mastery_threshold}")
         
         # Get first word
         word_id = current_session.get_next_word_id()
@@ -478,11 +485,16 @@ async def submit_practice(
             save_practice(word_id, child_id, spelled_word, is_correct_bool, filename)
             
             # Update session queue if active
+            logger.info(f"[PRACTICE SUBMIT] word_id={word_id}, is_correct={is_correct_bool}, current_session={current_session is not None}")
             if current_session and current_session.session_started:
+                logger.info(f"[PRACTICE SUBMIT] Using session with mastery_threshold={current_session.mastery_threshold}")
                 if is_correct_bool:
                     current_session.mark_word_mastered(word_id)
+                    logger.info(f"[PRACTICE SUBMIT] mark_word_mastered called for word_id={word_id}")
                 else:
                     current_session.mark_word_incorrect(word_id)
+            else:
+                logger.warning(f"[PRACTICE SUBMIT] No active session! current_session={current_session}")
             
             # Update word progress if correct (per-child tracking)
             if is_correct_bool:

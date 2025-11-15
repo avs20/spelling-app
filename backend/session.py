@@ -7,8 +7,11 @@ Implements Anki-like queue system:
 """
 
 import random
+import logging
 from datetime import date
 from database import get_words_for_today, get_words_for_child
+
+logger = logging.getLogger(__name__)
 
 class WordSession:
     """Manages word queue for a single practice session"""
@@ -104,13 +107,18 @@ class WordSession:
         # Increment correct count for this word
         self.word_correct_count[word_id] += 1
         
+        logger.info(f"[MARK_MASTERED] word_id={word_id}, correct_count={self.word_correct_count[word_id]}, mastery_threshold={self.mastery_threshold}")
+        
         # Only remove from queue if mastery threshold is reached
         if self.word_correct_count[word_id] >= self.mastery_threshold:
+            logger.info(f"[MARK_MASTERED] Threshold reached! Removing word_id={word_id} from queue")
             if word_id in self.available_words:
                 # Remove from queue completely
                 self.available_words.remove(word_id)
                 # Track as mastered in this session
                 self.mastered_words.add(word_id)
+        else:
+            logger.info(f"[MARK_MASTERED] Threshold not reached yet. Need {self.mastery_threshold - self.word_correct_count[word_id]} more correct answers")
     
     def mark_word_incorrect(self, word_id):
         """
