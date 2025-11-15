@@ -5,6 +5,7 @@ Uses Turso for database (configured via environment variables)
 """
 
 import modal
+import os
 
 app = modal.App("spelling-app-v2")
 
@@ -16,9 +17,10 @@ volume = modal.Volume.from_name("spelling-app-data", create_if_missing=True)
 @app.function(
     image=image,
     volumes={"/modal-data": volume},
-    secrets=[
-        modal.Secret.from_name("turso-credentials")
-    ],
+    env={
+        "TURSO_DATABASE_URL": os.getenv("TURSO_DATABASE_URL"),
+        "TURSO_AUTH_TOKEN": os.getenv("TURSO_AUTH_TOKEN"),
+    },
     min_containers=1,
     timeout=300,
 )
@@ -41,7 +43,10 @@ def fastapi_app():
 @app.function(
     image=image,
     schedule=modal.Cron("*/5 * * * *"),
-    secrets=[modal.Secret.from_name("turso-credentials")],
+    env={
+        "TURSO_DATABASE_URL": os.getenv("TURSO_DATABASE_URL"),
+        "TURSO_AUTH_TOKEN": os.getenv("TURSO_AUTH_TOKEN"),
+    },
 )
 def keep_warm():
     """
