@@ -206,7 +206,7 @@ def get_word_for_practice(practiced_today=None):
     
     word = cursor.fetchone()
     conn.close()
-    return word
+    return _convert_row_to_dict(word, ['id', 'word', 'category', 'successful_days'])
 
 def get_word_by_id(word_id: int):
     """Get word by ID"""
@@ -215,7 +215,7 @@ def get_word_by_id(word_id: int):
     cursor.execute("SELECT word, category FROM words WHERE id = ?", (word_id,))
     word = cursor.fetchone()
     conn.close()
-    return word
+    return _convert_row_to_dict(word, ['word', 'category'])
 
 def save_practice(word_id: int, child_id: int, spelled_word: str, is_correct: bool, drawing_filename: str):
     """Save practice record"""
@@ -707,7 +707,8 @@ def get_words_for_child(child_id: int):
         conn.close()
         return []
     
-    user_id = result[0]
+    # Handle both SQLite Row objects and Turso tuples
+    user_id = result[0] if isinstance(result, (tuple, list)) else result.get('user_id')
     today = date.today().isoformat()
     
     # Get only family's custom words (user_id must match)
